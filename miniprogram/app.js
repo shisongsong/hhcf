@@ -7,7 +7,7 @@ App({
     userInfo: null,
     privacyAgreed: false,
     token: null,
-    apiBase: 'http://192.168.1.15:3000',
+    apiBase: 'https://empire-democrat-responsibility-strengthen.trycloudflare.com',
   },
   checkPrivacyAgreement: function () {
     const privacyAgreed = wx.getStorageSync('privacyAgreed');
