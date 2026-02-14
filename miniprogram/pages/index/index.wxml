@@ -54,8 +54,8 @@
     </view>
     
     <!-- 打卡按钮 -->
-    <view class="button-wrapper">
-      <view class="bubble-btn" style="--primary: {{theme.primary}};" bindtap="onAddClick">
+    <view">
+      <view class="button-wrapper class="bubble-btn" style="--primary: {{theme.primary}};" bindtap="onAddClick">
         <!-- 主泡泡 -->
         <view class="bubble-main"></view>
         <!-- 高光 -->
@@ -71,6 +71,23 @@
         </view>
       </view>
     </view>
+    
+    <!-- 今日打卡状态 -->
+    <view class="meal-status">
+      <view 
+        wx:for="{{todayMeals}}" 
+        wx:key="key"
+        class="meal-icon-item {{item.checked ? 'checked' : ''}}"
+        style="{{item.checked ? '--active-color:' + item.color : ''}}"
+        bindtap="onMealIconTap"
+        data-key="{{item.key}}"
+      >
+        <view class="meal-icon-bg" style="background: {{item.checked ? item.color : 'rgba(255,255,255,0.3)'}};">
+          <text class="meal-icon-emoji">{{item.emoji}}</text>
+        </view>
+        <text class="meal-icon-label" style="color: {{item.checked ? theme.textPrimary : theme.textSecondary}};">{{item.label}}</text>
+      </view>
+    </view>
   </view>
   
   <!-- 底部导航 -->
@@ -78,6 +95,39 @@
     <view class="nav-item" style="color: {{theme.textSecondary}};" bindtap="goToRecords">
       <text class="nav-icon">📋</text>
       <text class="nav-text" style="color: {{theme.textSecondary}};">记录</text>
+    </view>
+  </view>
+  
+  <!-- 打卡详情弹窗 -->
+  <view class="popup-mask {{showMealPopup ? 'show' : ''}}" bindtap="onClosePopup"></view>
+  <view class="popup-modal {{showMealPopup ? 'show' : ''}}">
+    <view class="popup-content" wx:if="{{popupRecord}}">
+      <view class="popup-image-list">
+        <image 
+          wx:for="{{popupRecord.imageUrl}}" 
+          wx:key="index"
+          class="popup-image" 
+          src="{{item}}" 
+          mode="aspectFill"
+        ></image>
+      </view>
+      <view class="popup-info">
+        <view class="popup-meal-tag" style="background: linear-gradient(135deg, {{popupMealInfo.color}} 0%, {{popupMealInfo.color}}CC 100%);">
+          <text>{{popupMealInfo.emoji}}</text>
+          <text>{{popupMealInfo.label}}</text>
+        </view>
+        <text class="popup-time">{{popupFormattedTime}}</text>
+      </view>
+      <view class="popup-actions">
+        <view class="popup-action-btn" bindtap="onSharePoster">
+          <text class="action-icon">🖼️</text>
+          <text class="action-text">生成海报</text>
+        </view>
+        <view class="popup-action-btn" bindtap="onShareMiniApp">
+          <text class="action-icon">📤</text>
+          <text class="action-text">分享好友</text>
+        </view>
+      </view>
     </view>
   </view>
 </view>

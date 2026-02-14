@@ -1,5 +1,5 @@
 const app = getApp();
-const { recognizeMealType } = require('../../utils/meal');
+const { recognizeMealType, getMealTypeInfo, getAllMealTypes, MEAL_TYPES } = require('../../utils/meal');
 
 const TIME_THEMES = {
   dawn: {
@@ -99,6 +99,11 @@ Page({
     month: 'JAN',
     theme: {},
     themeList: themeList,
+    todayMeals: [],
+    showMealPopup: false,
+    popupRecord: null,
+    popupMealInfo: null,
+    popupFormattedTime: null,
   },
 
   onLoad: function () {
@@ -141,6 +146,7 @@ Page({
   onShow: function () {
     this.checkPrivacyStatus();
     this.checkLoginStatus();
+    this.loadTodayMeals();
   },
 
   checkPrivacyStatus: function () {
@@ -175,6 +181,90 @@ Page({
       }
     }
     return true;
+  },
+
+  loadTodayMeals: async function () {
+    try {
+      const res = await app.request({
+        url: '/api/records',
+        method: 'GET',
+      });
+      
+      const records = res.data || [];
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      const todayStart = today.getTime();
+      const todayEnd = todayStart + 24 * 60 * 60 * 1000;
+      
+      const todayRecords = records.filter(r => r.timestamp >= todayStart && r.timestamp < todayEnd);
+      
+      const mealTypes = getAllMealTypes();
+      const todayMeals = mealTypes.map(meal => {
+        const record = todayRecords.find(r => r.mealType === meal.key);
+        return {
+          ...meal,
+          checked: !!record,
+          record: record || null,
+        };
+      });
+      
+      this.setData({ todayMeals });
+    } catch (err) {
+      console.error('加载今日记录失败', err);
+    }
+  },
+
+  onMealIconTap: function(e) {
+    const { key } = e.currentTarget.dataset;
+    const meal = this.data.todayMeals.find(m => m.key === key);
+    
+    if (!meal || !meal.checked) {
+      this.onAddClick();
+      return;
+    }
+    
+    const mealInfo = getMealTypeInfo(key);
+    const record = meal.record;
+    
+    const date = new Date(record.timestamp);
+    const hours = String(date.getHours()).padStart(2, '0');
+    const minutes = String(date.getMinutes()).padStart(2, '0');
+    
+    this.setData({
+      showMealPopup: true,
+      popupRecord: record,
+      popupMealInfo: mealInfo,
+      popupFormattedTime: `${hours}:${minutes}`,
+    });
+  },
+
+  onClosePopup: function() {
+    this.setData({
+      showMealPopup: false,
+      popupRecord: null,
+      popupMealInfo: null,
+    });
+  },
+
+  onSharePoster: function() {
+    const { popupRecord } = this.data;
+    if (popupRecord) {
+      wx.navigateTo({
+        url: `/pages/detail/detail?id=${popupRecord.id}`,
+      });
+    }
+    this.onClosePopup();
+  },
+
+  onShareMiniApp: function() {
+    const { popupRecord, popupMealInfo } = this.data;
+    if (popupRecord) {
+      wx.showShareMenu({
+        withShareTicket: true,
+        menus: ['shareAppMessage', 'shareTimeline'],
+      });
+    }
+    this.onClosePopup();
   },
 
   onAddClick: async function () {
