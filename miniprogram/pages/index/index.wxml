@@ -133,16 +133,6 @@
 
   <!-- 拍照弹窗 -->
   <view class="camera-popup {{showCameraPopup ? 'show' : ''}}">
-    <view class="camera-header">
-      <view class="camera-close" bindtap="onCloseCameraPopup">
-        <text>✕</text>
-      </view>
-      <text class="camera-title">拍照打卡</text>
-      <view class="camera-save-btn {{cameraPhotos.length > 0 ? 'active' : ''}}" bindtap="onSavePhotos">
-        <text>保存</text>
-      </view>
-    </view>
-
     <!-- 调整图片弹窗 -->
     <view class="adjust-popup {{isAdjustingPhoto ? 'show' : ''}}">
       <view class="adjust-header">
@@ -167,6 +157,11 @@
           <text>双指缩放，单指拖动</text>
         </view>
       </view>
+    </view>
+
+    <!-- 关闭按钮 - 左上角 -->
+    <view class="camera-close-btn" bindtap="onCloseCameraPopup">
+      <text>✕</text>
     </view>
 
     <!-- 取景框 -->
@@ -211,7 +206,12 @@
           <view class="capture-inner"></view>
         </view>
       </view>
-      <view class="control-placeholder"></view>
+      <view class="control-btn {{cameraPhotos.length > 0 ? '' : 'disabled'}}" bindtap="onSavePhotos">
+        <view class="control-icon-wrapper">
+          <text class="control-icon">✓</text>
+        </view>
+        <text class="control-label">保存</text>
+      </view>
     </view>
   </view>
 

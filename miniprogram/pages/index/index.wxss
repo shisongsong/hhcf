@@ -606,23 +606,13 @@
   pointer-events: auto;
 }
 
-.camera-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 24rpx 32rpx;
-  padding-top: calc(24rpx + env(safe-area-inset-top));
-  background: linear-gradient(180deg, rgba(0,0,0,0.6) 0%, transparent 100%);
+/* 关闭按钮 */
+.camera-close-btn {
   position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  z-index: 10;
-}
-
-.camera-close {
-  width: 72rpx;
-  height: 72rpx;
+  top: calc(24rpx + env(safe-area-inset-top));
+  left: 24rpx;
+  width: 80rpx;
+  height: 80rpx;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -630,39 +620,13 @@
   border-radius: 50%;
   color: #fff;
   font-size: 36rpx;
+  z-index: 15;
   transition: all 0.2s ease;
 }
 
-.camera-close:active {
+.camera-close-btn:active {
   transform: scale(0.9);
   background: rgba(255,255,255,0.25);
-}
-
-.camera-title {
-  color: #fff;
-  font-size: 34rpx;
-  font-weight: 600;
-  letter-spacing: 2rpx;
-}
-
-.camera-save-btn {
-  padding: 14rpx 32rpx;
-  border-radius: 36rpx;
-  background: rgba(255,255,255,0.15);
-  color: rgba(255,255,255,0.5);
-  font-size: 28rpx;
-  font-weight: 500;
-  transition: all 0.25s ease;
-}
-
-.camera-save-btn.active {
-  background: linear-gradient(135deg, #FF8C42 0%, #FF6B6B 100%);
-  color: #fff;
-  box-shadow: 0 8rpx 24rpx rgba(255, 140, 66, 0.4);
-}
-
-.camera-save-btn:active {
-  transform: scale(0.95);
 }
 
 .camera-viewfinder {
@@ -671,6 +635,7 @@
   display: flex;
   align-items: center;
   justify-content: center;
+  margin-top: 100rpx;
 }
 
 .camera-element {
@@ -728,7 +693,7 @@
 
 .photo-thumbnail-list {
   position: absolute;
-  bottom: 220rpx;
+  bottom: 200rpx;
   left: 0;
   right: 0;
   padding: 0 24rpx;
@@ -737,9 +702,11 @@
 .thumbnail-scroll {
   display: flex;
   flex-direction: row;
+  white-space: nowrap;
 }
 
 .thumbnail-item {
+  display: inline-block;
   position: relative;
   width: 100rpx;
   height: 100rpx;
@@ -827,6 +794,10 @@
   color: rgba(255,255,255,0.8);
   font-size: 22rpx;
   font-weight: 500;
+}
+
+.control-btn.disabled {
+  opacity: 0.4;
 }
 
 .capture-wrapper {
