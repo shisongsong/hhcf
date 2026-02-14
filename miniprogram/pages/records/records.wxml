@@ -26,8 +26,6 @@
           wx:for-item="record"
           wx:key="id"
           class="timeline-item"
-          data-id="{{record.id}}"
-          bindtap="onRecordTap"
           style="--delay: {{index * 0.05}}s;"
         >
           <!-- 左侧时间点 -->
@@ -39,7 +37,11 @@
           </view>
           
           <!-- 右侧内容 -->
-          <view class="timeline-content">
+          <view 
+            class="timeline-content"
+            data-id="{{record.id}}"
+            bindtap="onRecordTap"
+          >
             <view class="content-header">
               <text class="meal-label" style="color: {{record.mealInfo.color}};">{{record.mealInfo.emoji}} {{record.mealInfo.label}}</text>
               <text class="record-time">{{record.formattedTime}}</text>

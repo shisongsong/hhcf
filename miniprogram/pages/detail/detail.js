@@ -41,11 +41,8 @@ Page({
     const currentX = e.touches[0].clientX;
     const deltaX = currentX - startX;
     
-    const screenWidth = wx.getSystemInfoSync().windowWidth;
-    const deltaRpx = (deltaX / screenWidth) * 750;
-    
     this.setData({
-      translateX: deltaRpx,
+      translateX: deltaX,
     });
   },
 
@@ -53,8 +50,7 @@ Page({
     const { record, currentImageIndex, startX } = this.data;
     if (!record || !record.imageUrl) return;
     
-    const screenWidth = wx.getSystemInfoSync().windowWidth;
-    const threshold = screenWidth * 0.25;
+    const threshold = 50;
     const deltaX = e.changedTouches[0].clientX - startX;
     
     this.setData({ translateX: 0 });

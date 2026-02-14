@@ -20,7 +20,7 @@
       wx:for="{{record.imageUrl}}" 
       wx:key="index"
       class="card-item"
-      style="z-index: {{record.imageUrl.length - Math.abs(currentImageIndex - index)}}; transform: translateX({{(index - currentImageIndex) * 40 + translateX}}rpx) scale({{1 - Math.abs(index - currentImageIndex) * 0.1}});"
+      style="z-index: {{record.imageUrl.length - Math.abs(currentImageIndex - index)}}; transform: translateX({{(index - currentImageIndex) * 60 + translateX}}px) scale({{1 - Math.abs(index - currentImageIndex) * 0.1}});"
     >
       <view class="card-image-box">
         <image class="card-image" src="{{item}}" mode="aspectFill"></image>
