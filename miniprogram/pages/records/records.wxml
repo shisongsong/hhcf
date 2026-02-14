@@ -36,7 +36,7 @@
           </view>
           
           <!-- 多图九宫格 -->
-          <view class="image-grid" style="grid-template-columns: repeat({{item.imageUrl.length > 3 ? 3 : item.imageUrl.length}}, 1fr);">
+          <view class="image-grid">
             <view 
               wx:for="{{item.imageUrl}}" 
               wx:for-item="img" 

@@ -216,5 +216,5 @@
   </view>
 
   <!-- 隐藏的 canvas 用于裁剪 -->
-  <canvas canvas-id="photoCropper" style="width: 600px; height: 600px; position: absolute; left: -9999px;"></canvas>
+  <canvas canvas-id="photoCropper" style="width: 800px; height: 800px; position: absolute; left: -9999px;" />
 </view>

@@ -369,7 +369,15 @@ Page({
     wx.showLoading({ title: '裁剪中...' });
 
     try {
-      const croppedPhotos = await this.processPhotosWithCrop(cameraPhotos);
+      const croppedPhotos = [];
+      
+      for (let i = 0; i < cameraPhotos.length; i++) {
+        const photo = cameraPhotos[i];
+        const adjustData = photoAdjustData[i] || { scale: 1, x: 0, y: 0 };
+        
+        const cropped = await this.cropToSquare(photo, adjustData);
+        croppedPhotos.push(cropped);
+      }
       
       const timestamp = Date.now();
       const mealTypeInfo = recognizeMealType(new Date(timestamp));
@@ -382,15 +390,63 @@ Page({
       });
     } catch (err) {
       wx.hideLoading();
-      wx.showToast({ title: '处理失败', icon: 'none' });
+      wx.showToast({ title: '裁剪失败', icon: 'none' });
       console.error(err);
     }
   },
 
-  processPhotosWithCrop: function(photos) {
-    return new Promise(async (resolve) => {
-      const croppedPhotos = [...photos];
-      resolve(croppedPhotos);
+  cropToSquare: function(photoPath, adjustData) {
+    return new Promise((resolve) => {
+      const ctx = wx.createCanvasContext('photoCropper', this);
+      
+      wx.getImageInfo({
+        src: photoPath,
+        success: (info) => {
+          const srcSize = Math.min(info.width, info.height);
+          const srcX = (info.width - srcSize) / 2;
+          const srcY = (info.height - srcSize) / 2;
+          
+          const scale = adjustData ? adjustData.scale : 1;
+          const offsetX = adjustData ? adjustData.x : 0;
+          const offsetY = adjustData ? adjustData.y : 0;
+          
+          const dstSize = 800;
+          
+          ctx.setFillStyle('#FFFFFF');
+          ctx.fillRect(0, 0, dstSize, dstSize);
+          
+          const drawWidth = srcSize * scale;
+          const drawHeight = srcSize * scale;
+          const drawX = (dstSize - drawWidth) / 2 + offsetX;
+          const drawY = (dstSize - drawHeight) / 2 + offsetY;
+          
+          ctx.drawImage(photoPath, srcX, srcY, srcSize, srcSize, drawX, drawY, drawWidth, drawHeight);
+          
+          ctx.draw(false, () => {
+            setTimeout(() => {
+              wx.canvasToTempFilePath({
+                canvasId: 'photoCropper',
+                width: dstSize,
+                height: dstSize,
+                destWidth: dstSize,
+                destHeight: dstSize,
+                quality: 0.85,
+                fileType: 'jpg',
+                success: (res) => {
+                  resolve(res.tempFilePath);
+                },
+                fail: (err) => {
+                  console.error('canvas to temp file fail', err);
+                  resolve(photoPath);
+                }
+              }, this);
+            }, 200);
+          });
+        },
+        fail: () => {
+          resolve(photoPath);
+        }
+      });
     });
   },
 
