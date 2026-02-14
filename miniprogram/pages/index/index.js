@@ -199,7 +199,7 @@ Page({
     return true;
   },
 
-  onAddClick: function () {
+  openCameraPopup: function () {
     this.setData({
       showCameraPopup: true,
       cameraPhotos: [],
@@ -489,7 +489,7 @@ Page({
     const loggedIn = await this.ensureLogin();
     if (!loggedIn) return;
 
-    this.onAddClick();
+    this.openCameraPopup();
   },
 
   goToRecords: function () {
