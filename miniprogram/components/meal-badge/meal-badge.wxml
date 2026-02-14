@@ -1,0 +1,3 @@
+<view class="meal-badge meal-badge-{{size}}" style="background-color: {{mealInfo.color}}">
+  <text class="badge-icon">{{mealInfo.icon}}</text>
+</view>

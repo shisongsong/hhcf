@@ -1,0 +1,6 @@
+{
+  "usingComponents": {
+    "meal-icon": "/components/meal-icon/meal-icon"
+  },
+  "disableScroll": true
+}

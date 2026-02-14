@@ -1,0 +1,8 @@
+{
+  "usingComponents": {
+    "meal-icon": "/components/meal-icon/meal-icon"
+  },
+  "navigationBarTitleText": "我的饭记录",
+  "enablePullDownRefresh": true,
+  "backgroundTextStyle": "dark"
+}

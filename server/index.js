@@ -1,0 +1,217 @@
+const path = require('path');
+require('dotenv').config({ path: path.resolve(__dirname, '.env') });
+
+const express = require('express');
+const cors = require('cors');
+const multer = require('multer');
+const qiniu = require('qiniu');
+const low = require('lowdb');
+const FileSync = require('lowdb/adapters/FileSync');
+const { v4: uuidv4 } = require('uuid');
+
+const app = express();
+const PORT = process.env.PORT || 3000;
+
+app.use(cors());
+app.use(express.json());
+app.use(express.static('public'));
+
+// 禁用 API 路由的 ETag 缓存
+app.use('/api', (req, res, next) => {
+  res.set('Cache-Control', 'no-store, no-cache, must-revalidate, private');
+  res.set('ETag', null);
+  next();
+});
+
+const adapter = new FileSync('db.json');
+const db = low(adapter);
+
+db.defaults({ records: [] }).write();
+
+const qiniuConfig = {
+  accessKey: process.env.QINIU_ACCESS_KEY || 'your-access-key',
+  secretKey: process.env.QINIU_SECRET_KEY || 'your-secret-key',
+  bucket: process.env.QINIU_BUCKET || 'your-bucket',
+  domain: process.env.QINIU_DOMAIN || 'https://your-domain.qiniup.com',
+};
+
+const mac = new qiniu.auth.digest.Mac(qiniuConfig.accessKey, qiniuConfig.secretKey);
+const config = new qiniu.conf.Config();
+config.zone = qiniu.zone.Zone_z2;
+
+const upload = multer({ dest: 'uploads/' });
+
+function generateToken(openid) {
+  return Buffer.from(JSON.stringify({ openid, timestamp: Date.now() })).toString('base64');
+}
+
+function verifyToken(token) {
+  try {
+    const decoded = Buffer.from(token, 'base64').toString();
+    const data = JSON.parse(decoded);
+    if (Date.now() - data.timestamp > 7 * 24 * 60 * 60 * 1000) return null;
+    return data.openid;
+  } catch {
+    return null;
+  }
+}
+
+app.post('/api/login', async (req, res) => {
+  const { code } = req.body;
+
+  if (!code) {
+    return res.status(400).json({ error: '缺少 code' });
+  }
+
+  const appId = process.env.WECHAT_APPID;
+  const appSecret = process.env.WECHAT_APPSECRET;
+
+  console.log('WECHAT_APPID:', appId ? appId + '...' : 'NOT FOUND');
+  console.log('WECHAT_APPSECRET:', appSecret ? appSecret : 'NOT FOUND');
+
+  if (!appId || !appSecret) {
+    // 如果没有配置微信参数，使用临时标识
+    const openid = uuidv4();
+    const token = generateToken(openid);
+    return res.json({ success: true, openid, token, temp: true });
+  }
+
+  try {
+    const url = `https://api.weixin.qq.com/sns/oauth2/jscode2session?appid=${appId}&secret=${appSecret}&js_code=${code}&grant_type=authorization_code`;
+    console.log('请求微信登录 API:', url.replace(appSecret, '***'));
+    
+    const response = await fetch(url, {
+      headers: {
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+        'Accept': 'application/json',
+      },
+    });
+    const data = await response.json();
+    console.log('微信登录响应:', data);
+
+    if (data.errcode) {
+      console.error('微信登录失败:', data);
+      // 降级使用临时标识
+      const openid = uuidv4();
+      const token = generateToken(openid);
+      return res.json({ success: true, openid, token, temp: true });
+    }
+
+    const openid = data.openid;
+    const token = generateToken(openid);
+    res.json({ success: true, openid, token });
+  } catch (err) {
+    console.error('登录异常:', err);
+    const openid = uuidv4();
+    const token = generateToken(openid);
+    res.json({ success: true, openid, token, temp: true });
+  }
+});
+
+app.get('/api/records', (req, res) => {
+  const token = req.headers.authorization?.replace('Bearer ', '');
+  const openid = verifyToken(token);
+  if (!openid) return res.status(401).json({ error: '未登录' });
+
+  const records = db.get('records').filter({ openid }).orderBy('timestamp', 'desc').value();
+  res.json({ success: true, data: records });
+});
+
+app.post('/api/records', (req, res) => {
+  const token = req.headers.authorization?.replace('Bearer ', '');
+  const openid = verifyToken(token);
+  if (!openid) return res.status(401).json({ error: '未登录' });
+
+  const { imageUrl, mealType, title, timestamp } = req.body;
+  const record = {
+    id: uuidv4(),
+    openid,
+    imageUrl,
+    mealType,
+    title,
+    timestamp: timestamp || Date.now(),
+    createdAt: new Date().toISOString(),
+  };
+
+  db.get('records').push(record).write();
+  res.json({ success: true, data: record });
+});
+
+app.get('/api/records/:id', (req, res) => {
+  const token = req.headers.authorization?.replace('Bearer ', '');
+  const openid = verifyToken(token);
+  if (!openid) return res.status(401).json({ error: '未登录' });
+
+  const record = db.get('records').find({ id: req.params.id }).value();
+  if (!record) return res.status(404).json({ error: '记录不存在' });
+
+  if (record.openid !== openid) {
+    return res.status(403).json({ error: '无权限访问' });
+  }
+
+  res.json({ success: true, data: record });
+});
+
+app.delete('/api/records/:id', (req, res) => {
+  const token = req.headers.authorization?.replace('Bearer ', '');
+  const openid = verifyToken(token);
+  if (!openid) return res.status(401).json({ error: '未登录' });
+
+  const exists = db.get('records').find({ id: req.params.id, openid }).value();
+  if (!exists) return res.status(404).json({ error: '记录不存在' });
+
+  db.get('records').remove({ id: req.params.id, openid }).write();
+  res.json({ success: true });
+});
+
+app.post('/api/upload', upload.single('file'), (req, res) => {
+  const token = req.headers.authorization?.replace('Bearer ', '');
+  const openid = verifyToken(token);
+  if (!openid) return res.status(401).json({ error: '未登录' });
+
+  if (!req.file) return res.status(400).json({ error: '没有文件' });
+
+  const key = `eating/${Date.now()}${path.extname(req.file.originalname) || '.jpg'}`;
+
+  const options = {
+    scope: `${qiniuConfig.bucket}:${key}`,
+  };
+  const putPolicy = new qiniu.rs.PutPolicy(options);
+  const uploadToken = putPolicy.uploadToken(mac);
+
+  const formUploader = new qiniu.form_up.FormUploader(config);
+  const putExtra = new qiniu.form_up.PutExtra();
+
+  formUploader.putFile(uploadToken, key, req.file.path, putExtra, (err, body, info) => {
+    if (err) return res.status(500).json({ error: err.message });
+
+    if (info.statusCode === 200) {
+      const imageUrl = `${qiniuConfig.domain}/${key}`;
+      res.json({ success: true, data: { imageUrl, key } });
+    } else {
+      res.status(info.statusCode).json({ error: body });
+    }
+  });
+});
+
+app.get('/api/qrcode', async (req, res) => {
+  const token = req.headers.authorization?.replace('Bearer ', '');
+  const openid = verifyToken(token);
+  if (!openid) return res.status(401).json({ error: '未登录' });
+
+  const { scene } = req.query;
+  if (!scene) return res.status(400).json({ error: '缺少参数' });
+
+  try {
+    const qrcodeUrl = `https://your-miniprogram.com/pages/detail/detail?id=${scene}`;
+    const QRCode = require('qrcode');
+    const qrcodeDataUrl = await QRCode.toDataURL(qrcodeUrl, { width: 280 });
+    res.json({ success: true, data: { qrcode: qrcodeDataUrl } });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.listen(PORT, '0.0.0.0', () => {
+  console.log(`服务器运行在 http://0.0.0.0:${PORT}`);
+});

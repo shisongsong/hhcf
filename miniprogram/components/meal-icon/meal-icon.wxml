@@ -1,0 +1,10 @@
+<view class="meal-icon">
+  <image 
+    wx:if="{{type && !imageError}}"
+    class="icon-img" 
+    src="/images/meal-icons/{{type}}.png" 
+    mode="aspectFit"
+    binderror="onImageError"
+  ></image>
+  <text wx:if="{{imageError}}" class="fallback-text">{{type}}</text>
+</view>

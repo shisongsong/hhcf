@@ -1,0 +1,29 @@
+{
+  "name": "hhcf",
+  "version": "1.0.0",
+  "description": "好好吃饭 - 微信小程序",
+  "scripts": {
+    "test": "jest",
+    "test:coverage": "jest --coverage",
+    "test:watch": "jest --watch"
+  },
+  "devDependencies": {
+    "jest": "^29.7.0"
+  },
+  "jest": {
+    "testEnvironment": "node",
+    "collectCoverageFrom": [
+      "miniprogram/**/*.js",
+      "!miniprogram/app.js",
+      "**/tests/**/*.js"
+    ],
+    "coverageThreshold": {
+      "global": {
+        "branches": 80,
+        "functions": 80,
+        "lines": 80,
+        "statements": 80
+      }
+    }
+  }
+}

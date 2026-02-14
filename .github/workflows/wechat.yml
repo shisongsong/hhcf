@@ -1,0 +1,78 @@
+name: 微信小程序 CI/CD
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+          
+      - name: Install dependencies
+        run: |
+          npm install -g miniprogram-ci
+          
+      - name: Download toolchain
+        run: |
+          miniprogram-ci tool install
+          
+      - name: Build miniprogram
+        run: |
+          cd miniprogram
+          miniprogram-ci compile --preview-qr-destination data64
+        env:
+          APPID: ${{ secrets.APPID }}
+          PRIVATE_KEY: ${{ secrets.PRIVATE_KEY }}
+          
+      - name: Upload to WeChat
+        run: |
+          cd miniprogram
+          miniprogram-ci preview \
+            --pp ./dist \
+            --pkp ./private.key \
+            --appid ${{ secrets.APPID }} \
+            --uv ${{ secrets.USER_VERSION }} \
+            -r 1 \
+            --enable-auto-qr
+        env:
+          APPID: ${{ secrets.APPID }}
+          
+      - name: Upload as Experience
+        run: |
+          cd miniprogram
+          miniprogram-ci experience \
+            --pp ./dist \
+            --pkp ./private.key \
+            --appid ${{ secrets.APPID }} \
+            --uv "CI-${{ github.run_number }}" \
+            --udid "${{ secrets.USER_VERSION }}"
+        env:
+          APPID: ${{ secrets.APPID }}
+          
+  notify:
+    needs: build
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Success Notification
+        if: success()
+        run: |
+          echo "小程序构建并发布到体验版成功！"
+          echo "版本号: CI-${{ github.run_number }}"
+          
+      - name: Failure Notification
+        if: failure()
+        run: |
+          echo "小程序构建失败，请检查代码！"

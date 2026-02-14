@@ -1,0 +1,64 @@
+<view class="container" wx:if="{{record}}">
+  <!-- 全屏图片 -->
+  <view class="image-viewer">
+    <image
+      class="full-image"
+      src="{{record.imageUrl}}"
+      mode="aspectFit"
+    ></image>
+  </view>
+
+  <!-- 顶部操作栏 -->
+  <view class="top-bar">
+    <view class="top-bar-bg"></view>
+    <view class="top-actions">
+      <view class="action-btn" bindtap="onBack">
+        <view class="back-icon">
+          <view class="back-arrow"></view>
+        </view>
+      </view>
+      <view class="action-btn" bindtap="onMoreTap">
+        <view class="more-icon">
+          <view class="more-dot"></view>
+          <view class="more-dot"></view>
+          <view class="more-dot"></view>
+        </view>
+      </view>
+    </view>
+  </view>
+
+  <!-- 底部信息栏 -->
+  <view class="bottom-bar">
+    <view class="bottom-bar-bg"></view>
+    <view class="bottom-content">
+      <view class="meal-info">
+        <view class="meal-tag" style="background: linear-gradient(135deg, {{mealTypeInfo.color}} 0%, {{mealTypeInfo.color}}CC 100%);">
+          <text class="meal-emoji">{{mealTypeInfo.emoji}}</text>
+          <text class="meal-label">{{mealTypeInfo.label}}</text>
+        </view>
+      </view>
+      <view class="time-info">
+        <text class="time-text">{{formattedTime.full}}</text>
+      </view>
+    </view>
+  </view>
+
+  <!-- 操作菜单 -->
+  <view class="action-sheet-mask {{showActionSheet ? 'show' : ''}}" bindtap="onCloseActionSheet"></view>
+  <view class="action-sheet {{showActionSheet ? 'show' : ''}}">
+    <view class="sheet-item" bindtap="onSavePoster" wx:if="{{isOwner}}">
+      <text class="sheet-icon">🖼️</text>
+      <text class="sheet-text">保存海报</text>
+    </view>
+    <view class="sheet-item" bindtap="onDeleteTap" wx:if="{{isOwner}}">
+      <text class="sheet-icon" style="color: #FF6B6B;">🗑️</text>
+      <text class="sheet-text" style="color: #FF6B6B;">删除记录</text>
+    </view>
+    <view class="sheet-cancel" bindtap="onCloseActionSheet">取消</view>
+  </view>
+
+  <!-- 海报画布 -->
+  <view class="poster-canvas-container">
+    <canvas type="2d" id="posterCanvas" style="width: 320px; height: 480px;"></canvas>
+  </view>
+</view>

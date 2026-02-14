@@ -1,0 +1,72 @@
+<view class="container">
+  <!-- 顶部导航 -->
+  <view class="header">
+    <view class="back-btn" bindtap="onBack">
+      <view class="back-arrow"></view>
+    </view>
+    <text class="header-title">{{mealTypeInfo.label}}打卡</text>
+    <view class="header-placeholder"></view>
+  </view>
+
+  <!-- 图片展示区 -->
+  <view class="image-section">
+    <view class="image-frame">
+      <image class="food-image" src="{{imagePath}}" mode="aspectFill"></image>
+      <!-- 上传状态遮罩 -->
+      <view class="upload-overlay" wx:if="{{isUploading || uploadProgress}}">
+        <view class="upload-card">
+          <view class="spinner-wrapper">
+            <view class="spinner" wx:if="{{isUploading}}"></view>
+            <text class="success-icon" wx:if="{{!isUploading && uploadProgress === '上传完成'}}">✓</text>
+          </view>
+          <text class="status-text">{{uploadProgress || '上传中...'}}</text>
+          <text class="retry-text" wx:if="{{uploadProgress === '上传失败，点击重试'}}" bindtap="onRetryUpload">点击重试</text>
+        </view>
+      </view>
+    </view>
+  </view>
+
+  <!-- 餐别选择器 -->
+  <view class="selector-section">
+    <text class="section-label">选择餐别</text>
+    <scroll-view scroll-x class="meal-scroll" enhanced show-scrollbar="{{false}}">
+      <view class="meal-options">
+        <view
+          wx:for="{{mealTypes}}"
+          wx:key="key"
+          class="meal-item {{mealType === item.key ? 'active' : ''}}"
+          style="{{mealType === item.key ? '--active-color:' + item.color : ''}}"
+          bindtap="onMealTypeChange"
+          data-key="{{item.key}}"
+        >
+          <view class="meal-icon-wrapper" style="background: {{mealType === item.key ? item.color : '#F5F3F0'}};">
+            <text class="meal-emoji">{{item.emoji}}</text>
+          </view>
+          <text class="meal-name" style="color: {{mealType === item.key ? item.color : '#6B6B6B'}};">{{item.label}}</text>
+        </view>
+      </view>
+    </scroll-view>
+  </view>
+
+  <!-- 标题编辑 -->
+  <view class="title-section">
+    <text class="section-label">标题</text>
+    <view class="title-bar" bindtap="onTitleTap">
+      <text class="title-text">{{title}}</text>
+      <view class="edit-indicator">
+        <text>编辑</text>
+        <view class="arrow-right"></view>
+      </view>
+    </view>
+  </view>
+
+  <!-- 底部操作栏 -->
+  <view class="action-bar">
+    <view class="btn btn-back" bindtap="onBack">
+      <text>返回修改</text>
+    </view>
+    <view class="btn btn-confirm {{isUploading ? 'disabled' : ''}}" bindtap="onConfirm">
+      <text>{{imageUrl ? '✓ 保存' : '保存记录'}}</text>
+    </view>
+  </view>
+</view>

@@ -1,0 +1,23 @@
+{
+  "name": "好好吃饭-server",
+  "version": "1.0.0",
+  "description": "好好吃饭后端服务",
+  "main": "index.js",
+  "scripts": {
+    "start": "node index.js",
+    "dev": "nodemon index.js"
+  },
+  "dependencies": {
+    "cors": "^2.8.5",
+    "dotenv": "^17.2.3",
+    "express": "^4.18.2",
+    "lowdb": "^1.0.0",
+    "multer": "^1.4.5-lts.1",
+    "qiniu": "^7.8.0",
+    "qrcode": "^1.5.3",
+    "uuid": "^9.0.0"
+  },
+  "devDependencies": {
+    "nodemon": "^3.0.1"
+  }
+}

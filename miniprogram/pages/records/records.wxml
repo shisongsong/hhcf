@@ -1,0 +1,96 @@
+<view class="container">
+  <!-- 页面头部 -->
+  <view class="page-header">
+    <view class="header-content">
+      <text class="page-title">我的记录</text>
+      <text class="record-count" wx:if="{{records.length > 0}}">{{records.length}} 条</text>
+    </view>
+    <view class="menu-btn" bindtap="onMenuTap">
+      <view class="menu-dots">
+        <view></view><view></view><view></view>
+      </view>
+    </view>
+  </view>
+
+  <!-- 筛选状态栏 -->
+  <view class="filter-bar" wx:if="{{isFilterActive}}">
+    <view class="filter-content">
+      <text class="filter-text">{{filterText}}</text>
+    </view>
+    <view class="reset-btn" bindtap="onResetFilter">
+      <text>重置</text>
+    </view>
+  </view>
+
+  <!-- 时光轴列表 -->
+  <scroll-view 
+    class="timeline" 
+    scroll-y 
+    enhanced 
+    show-scrollbar="{{false}}"
+    bindscroll="onScroll"
+  >
+    <view class="timeline-list" wx:if="{{groupKeys.length > 0}}">
+      <view 
+        wx:for="{{groupKeys}}" 
+        wx:key="index" 
+        wx:for-index="groupIndex"
+        class="timeline-group"
+      >
+        <!-- 分组日期 -->
+        <view class="timeline-date">
+          <view class="date-line"></view>
+          <text class="date-text">{{item}}</text>
+        </view>
+        
+        <!-- 时间线 -->
+        <view class="timeline-items">
+          <view 
+            wx:for="{{groupedRecords[item]}}"
+            wx:for-item="record"
+            wx:key="id"
+            wx:for-index="itemIndex"
+            class="timeline-item {{currentItemId === record.id ? 'active' : ''}}"
+            data-id="{{record.id}}"
+            bindtap="onRecordTap"
+            style="animation-delay: {{(groupIndex * 3 + itemIndex) * 0.05}}s"
+          >
+            <!-- 时间线左侧 -->
+            <view class="timeline-left">
+              <view class="time-dot">
+                <view class="dot-inner"></view>
+              </view>
+              <view class="time-line"></view>
+            </view>
+            
+            <!-- 卡片 -->
+            <view class="timeline-card">
+              <view class="card-image-wrapper">
+                <image 
+                  class="card-image" 
+                  src="{{record.imageUrl}}" 
+                  mode="aspectFill"
+                  lazy-load
+                ></image>
+                <view class="meal-tag" style="background: linear-gradient(135deg, {{record.mealInfo.color}} 0%, {{record.mealInfo.color}}CC 100%);">
+                  <text class="meal-emoji">{{record.mealInfo.emoji}}</text>
+                </view>
+              </view>
+              <view class="card-info">
+                <text class="card-title">{{record.title}}</text>
+                <text class="card-time">{{record.mealInfo.label}}</text>
+              </view>
+            </view>
+          </view>
+        </view>
+      </view>
+    </view>
+
+    <!-- 空状态 -->
+    <view class="empty-state" wx:else>
+      <view class="empty-emoji">🍽️</view>
+      <text class="empty-text">还没有记录哦</text>
+      <text class="empty-hint">记录你的第一顿饭吧</text>
+    </view>
+  </scroll-view>
+</view>

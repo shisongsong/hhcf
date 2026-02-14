@@ -1,0 +1,83 @@
+<view class="container">
+  <!-- 动态背景 -->
+  <view class="dynamic-bg">
+    <view class="bg-gradient" style="background: linear-gradient(180deg, {{theme.bgGradient[0]}} 0%, {{theme.bgGradient[1]}} 60%, {{theme.bgGradient[2]}} 100%);"></view>
+    <!-- 动态装饰元素 -->
+    <view class="decorations">
+      <view 
+        wx:for="{{theme.blobs}}" 
+        wx:key="index"
+        class="blob blob-{{index}}"
+        style="background: {{item}}; animation-delay: {{index * 2}}s;"
+      ></view>
+      <!-- 时间专属图案 -->
+      <view class="time-element element-{{theme.key}}">
+        <text>{{theme.emoji}}</text>
+      </view>
+    </view>
+  </view>
+  
+  <!-- 测试切换按钮 -->
+  <view class="debug-panel">
+    <view class="debug-btn" bindtap="toggleTheme">切换</view>
+    <view class="theme-list">
+      <view 
+        wx:for="{{themeList}}" 
+        wx:key="key"
+        class="theme-item {{theme.key === item.key ? 'active' : ''}}"
+        style="background: {{item.bgGradient[1]}};"
+        bindtap="setTheme"
+        data-key="{{item.key}}"
+      >
+        <text>{{item.emoji}}</text>
+      </view>
+    </view>
+  </view>
+  
+  <!-- 主内容 -->
+  <view class="main-content">
+    <!-- 时间标识 -->
+    <view class="time-badge" style="color: {{theme.textPrimary}};">
+      <text>{{theme.emoji}}</text>
+      <text class="time-name" style="color: {{theme.textSecondary}};">{{theme.name}}</text>
+    </view>
+    
+    <!-- 日期 -->
+    <view class="date-display">
+      <text class="month" style="color: {{theme.textSecondary}};">{{month}}</text>
+      <text class="day" style="-webkit-text-fill-color: {{theme.textPrimary}}; color: {{theme.textPrimary}};">{{day}}</text>
+    </view>
+    
+    <!-- 问候 -->
+    <view class="greeting">
+      <text class="greeting-text" style="color: {{theme.textPrimary}};">{{theme.greeting}}</text>
+    </view>
+    
+    <!-- 打卡按钮 -->
+    <view class="button-wrapper">
+      <view class="bubble-btn" style="--primary: {{theme.primary}};" bindtap="onAddClick">
+        <!-- 主泡泡 -->
+        <view class="bubble-main"></view>
+        <!-- 高光 -->
+        <view class="bubble-shine"></view>
+        <!-- 按钮内容 -->
+        <view class="btn-content">
+          <view class="camera-icon">
+            <view class="camera-body"></view>
+            <view class="camera-lens"></view>
+            <view class="camera-flash"></view>
+          </view>
+          <text class="btn-hint">拍照打卡</text>
+        </view>
+      </view>
+    </view>
+  </view>
+  
+  <!-- 底部导航 -->
+  <view class="bottom-nav">
+    <view class="nav-item" style="color: {{theme.textSecondary}};">
+      <text class="nav-icon">📋</text>
+      <text class="nav-text" style="color: {{theme.textSecondary}};">记录</text>
+    </view>
+  </view>
+</view>
