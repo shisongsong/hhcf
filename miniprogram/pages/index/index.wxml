@@ -75,7 +75,7 @@
   
   <!-- 底部导航 -->
   <view class="bottom-nav">
-    <view class="nav-item" style="color: {{theme.textSecondary}};">
+    <view class="nav-item" style="color: {{theme.textSecondary}};" bindtap="goToRecords">
       <text class="nav-icon">📋</text>
       <text class="nav-text" style="color: {{theme.textSecondary}};">记录</text>
     </view>
