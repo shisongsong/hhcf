@@ -130,4 +130,110 @@
       </view>
     </view>
   </view>
+
+  <!-- 拍照弹窗 -->
+  <view class="camera-popup {{showCameraPopup ? 'show' : ''}}">
+    <view class="camera-header">
+      <view class="camera-close" bindtap="onCloseCameraPopup">
+        <text>✕</text>
+      </view>
+      <text class="camera-title">拍照打卡</text>
+      <view class="camera-placeholder"></view>
+    </view>
+
+    <!-- 调整图片弹窗 -->
+    <view class="adjust-popup {{isAdjustingPhoto ? 'show' : ''}}">
+      <view class="adjust-content">
+        <view class="adjust-preview">
+          <image 
+            class="adjust-image" 
+            src="{{cameraPhotos[adjustPhotoIndex]}}"
+            mode="aspectFill"
+            style="transform: scale({{adjustScale}}) translate({{adjustX}}rpx, {{adjustY}}rpx);"
+          ></image>
+          <view class="adjust-mask-top"></view>
+          <view class="adjust-mask-bottom"></view>
+          <view class="adjust-mask-left"></view>
+          <view class="adjust-mask-right"></view>
+        </view>
+        <view class="adjust-controls">
+          <view class="adjust-control">
+            <text>缩放: {{adjustScale.toFixed(1)}}x</text>
+            <slider min="50" max="150" value="{{adjustScale * 50}}" bindchange="onAdjustScaleChange" />
+          </view>
+          <view class="adjust-control">
+            <text>水平移动</text>
+            <slider min="0" max="200" value="{{adjustX + 100}}" bindchange="onAdjustXChange" />
+          </view>
+          <view class="adjust-control">
+            <text>垂直移动</text>
+            <slider min="0" max="200" value="{{adjustY + 100}}" bindchange="onAdjustYChange" />
+          </view>
+          <view class="adjust-btns">
+            <view class="adjust-btn cancel" bindtap="onCancelAdjust">取消</view>
+            <view class="adjust-btn confirm" bindtap="onConfirmAdjust">确定</view>
+          </view>
+        </view>
+      </view>
+    </view>
+
+    <!-- 取景框 -->
+    <view class="camera-viewfinder">
+      <camera 
+        device-position="back" 
+        flash="off" 
+        class="camera-element"
+      ></camera>
+      <view class="viewfinder-frame">
+        <view class="frame-corner tl"></view>
+        <view class="frame-corner tr"></view>
+        <view class="frame-corner bl"></view>
+        <view class="frame-corner br"></view>
+      </view>
+    </view>
+
+    <!-- 照片预览 -->
+    <view class="photo-thumbnail-list" wx:if="{{cameraPhotos.length > 0}}">
+      <scroll-view scroll-x class="thumbnail-scroll">
+        <view 
+          wx:for="{{cameraPhotos}}" 
+          wx:key="index"
+          class="thumbnail-item {{currentCameraIndex === index ? 'active' : ''}}"
+        >
+          <image class="thumbnail-img" src="{{item}}" mode="aspectFill" bindtap="onStartAdjustPhoto" data-index="{{index}}"></image>
+          <view class="thumbnail-delete" bindtap="onDeletePhoto" data-index="{{index}}">✕</view>
+        </view>
+      </scroll-view>
+    </view>
+
+    <!-- 底部控制栏 -->
+    <view class="camera-controls">
+      <view class="control-btn album" bindtap="onChooseFromAlbum">
+        <text>📷</text>
+      </view>
+      <view class="control-btn capture" bindtap="onTakePhoto">
+        <view class="capture-btn"></view>
+      </view>
+      <view class="control-btn save {{cameraPhotos.length === 0 ? 'disabled' : ''}}" bindtap="onSavePhotos">
+        <text>✓</text>
+      </view>
+    </view>
+  </view>
+
+  <!-- 隐藏的 canvas 用于裁剪 -->
+  <canvas canvas-id="cropCanvas" style="width: 600px; height: 600px; position: absolute; left: -9999px;"></canvas>
+</view>
+      </view>
+      <view class="popup-actions">
+        <view class="popup-action-btn" bindtap="onSharePoster">
+          <text class="action-icon">🖼️</text>
+          <text class="action-text">生成海报</text>
+        </view>
+        <view class="popup-action-btn" bindtap="onShareMiniApp">
+          <text class="action-icon">📤</text>
+          <text class="action-text">分享好友</text>
+        </view>
+      </view>
+    </view>
+  </view>
 </view>

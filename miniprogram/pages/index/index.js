@@ -104,12 +104,28 @@ Page({
     popupRecord: null,
     popupMealInfo: null,
     popupFormattedTime: null,
+    showCameraPopup: false,
+    cameraPhotos: [],
+    photoAdjustData: [],
+    currentCameraIndex: 0,
+    isAdjustingPhoto: false,
+    adjustPhotoIndex: -1,
+    adjustScale: 1,
+    adjustX: 0,
+    adjustY: 0,
+    cameraContext: null,
   },
 
   onLoad: function () {
     this.checkPrivacyStatus();
     this.updateDate();
     this.updateTheme();
+  },
+  
+  onReady: function() {
+    this.setData({
+      cameraContext: wx.createCameraContext(),
+    });
   },
   
   updateDate: function() {
@@ -181,6 +197,201 @@ Page({
       }
     }
     return true;
+  },
+
+  onAddClick: function () {
+    this.setData({
+      showCameraPopup: true,
+      cameraPhotos: [],
+      photoAdjustData: [],
+    });
+    setTimeout(() => {
+      this.setData({ cameraContext: wx.createCameraContext() });
+    }, 100);
+  },
+
+  onCloseCameraPopup: function() {
+    this.setData({
+      showCameraPopup: false,
+    });
+  },
+
+  onTakePhoto: function() {
+    const { cameraContext, cameraPhotos } = this.data;
+    if (cameraPhotos.length >= 9) {
+      wx.showToast({ title: '最多9张', icon: 'none' });
+      return;
+    }
+    
+    cameraContext.takePhoto({
+      quality: 'high',
+      success: (res) => {
+        const newPhotos = [...cameraPhotos, res.tempImagePath];
+        const newAdjustData = [...this.data.photoAdjustData, { scale: 1, x: 0, y: 0 }];
+        this.setData({
+          cameraPhotos: newPhotos,
+          photoAdjustData: newAdjustData,
+          currentCameraIndex: newPhotos.length - 1,
+        });
+      },
+      fail: (err) => {
+        wx.showToast({ title: '拍照失败', icon: 'none' });
+      },
+    });
+  },
+
+  onChooseFromAlbum: function() {
+    const { cameraPhotos } = this.data;
+    const remaining = 9 - cameraPhotos.length;
+    
+    wx.chooseMedia({
+      count: remaining,
+      mediaType: ['image'],
+      sourceType: ['album'],
+      success: (res) => {
+        const newPhotos = res.tempFiles.map(f => f.tempFilePath);
+        const allPhotos = [...cameraPhotos, ...newPhotos];
+        const newAdjustData = [...this.data.photoAdjustData];
+        newPhotos.forEach(() => {
+          newAdjustData.push({ scale: 1, x: 0, y: 0 });
+        });
+        this.setData({
+          cameraPhotos: allPhotos.slice(0, 9),
+          photoAdjustData: newAdjustData.slice(0, 9),
+        });
+      },
+    });
+  },
+
+  onDeletePhoto: function(e) {
+    const { index } = e.currentTarget.dataset;
+    const newPhotos = [...this.data.cameraPhotos];
+    const newAdjustData = [...this.data.photoAdjustData];
+    newPhotos.splice(index, 1);
+    newAdjustData.splice(index, 1);
+    this.setData({
+      cameraPhotos: newPhotos,
+      photoAdjustData: newAdjustData,
+      currentCameraIndex: Math.min(this.data.currentCameraIndex, newPhotos.length - 1),
+    });
+  },
+
+  onStartAdjustPhoto: function(e) {
+    const { index } = e.currentTarget.dataset;
+    const adjustData = this.data.photoAdjustData[index] || { scale: 1, x: 0, y: 0 };
+    this.setData({
+      isAdjustingPhoto: true,
+      adjustPhotoIndex: index,
+      adjustScale: adjustData.scale,
+      adjustX: adjustData.x,
+      adjustY: adjustData.y,
+    });
+  },
+
+  onAdjustScaleChange: function(e) {
+    this.setData({
+      adjustScale: e.detail.value / 50,
+    });
+  },
+
+  onAdjustXChange: function(e) {
+    this.setData({
+      adjustX: e.detail.value - 100,
+    });
+  },
+
+  onAdjustYChange: function(e) {
+    this.setData({
+      adjustY: e.detail.value - 100,
+    });
+  },
+
+  onConfirmAdjust: function() {
+    const { adjustPhotoIndex, adjustScale, adjustX, adjustY, photoAdjustData } = this.data;
+    const newAdjustData = [...photoAdjustData];
+    newAdjustData[adjustPhotoIndex] = { scale: adjustScale, x: adjustX, y: adjustY };
+    this.setData({
+      photoAdjustData: newAdjustData,
+      isAdjustingPhoto: false,
+      adjustPhotoIndex: -1,
+    });
+  },
+
+  onCancelAdjust: function() {
+    this.setData({
+      isAdjustingPhoto: false,
+      adjustPhotoIndex: -1,
+    });
+  },
+
+  onSavePhotos: async function() {
+    const { cameraPhotos, photoAdjustData } = this.data;
+    if (cameraPhotos.length === 0) {
+      wx.showToast({ title: '请先拍照', icon: 'none' });
+      return;
+    }
+
+    wx.showLoading({ title: '处理中...' });
+
+    try {
+      const croppedPhotos = await this.cropPhotos(cameraPhotos, photoAdjustData);
+      
+      const tempFilePaths = croppedPhotos;
+      const timestamp = Date.now();
+      const mealTypeInfo = recognizeMealType(new Date(timestamp));
+      
+      this.setData({ showCameraPopup: false });
+      wx.hideLoading();
+      
+      wx.navigateTo({
+        url: `/pages/preview/preview?imagePaths=${encodeURIComponent(JSON.stringify(tempFilePaths))}&timestamp=${timestamp}&mealType=${mealTypeInfo.key}`,
+      });
+    } catch (err) {
+      wx.hideLoading();
+      wx.showToast({ title: '处理失败', icon: 'none' });
+      console.error(err);
+    }
+  },
+
+  cropPhotos: function(photos, adjustData) {
+    return new Promise((resolve) => {
+      const ctx = wx.createCanvasContext('cropCanvas');
+      const size = 600;
+      const croppedPaths = [];
+      let processed = 0;
+
+      photos.forEach((photo, index) => {
+        const adjust = adjustData[index] || { scale: 1, x: 0, y: 0 };
+        
+        ctx.drawImage(photo, 0, 0, size, size);
+        
+        ctx.draw(false, () => {
+          wx.canvasToTempFilePath({
+            canvas: 'cropCanvas',
+            x: (size - size / adjust.scale) / 2 - adjust.x,
+            y: (size - size / adjust.scale) / 2 - adjust.y,
+            width: size / adjust.scale,
+            height: size / adjust.scale,
+            destWidth: size,
+            destHeight: size,
+            success: (res) => {
+              croppedPaths[index] = res.tempFilePath;
+              processed++;
+              if (processed === photos.length) {
+                resolve(croppedPaths);
+              }
+            },
+            fail: () => {
+              croppedPaths[index] = photo;
+              processed++;
+              if (processed === photos.length) {
+                resolve(croppedPaths);
+              }
+            },
+          });
+        });
+      });
+    });
   },
 
   loadTodayMeals: async function () {
@@ -278,27 +489,7 @@ Page({
     const loggedIn = await this.ensureLogin();
     if (!loggedIn) return;
 
-    wx.chooseMedia({
-      count: 9,
-      mediaType: ['image'],
-      sourceType: ['album', 'camera'],
-      success: (res) => {
-        const tempFilePaths = res.tempFiles.map(f => f.tempFilePath);
-        const timestamp = Date.now();
-        const mealTypeInfo = recognizeMealType(new Date(timestamp));
-        wx.navigateTo({
-          url: `/pages/preview/preview?imagePaths=${encodeURIComponent(JSON.stringify(tempFilePaths))}&timestamp=${timestamp}&mealType=${mealTypeInfo.key}`,
-        });
-      },
-      fail: (err) => {
-        if (err.errMsg !== 'chooseMedia:fail cancel') {
-          wx.showToast({
-            title: '请重新选择',
-            icon: 'none',
-          });
-        }
-      },
-    });
+    this.onAddClick();
   },
 
   goToRecords: function () {
