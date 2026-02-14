@@ -54,8 +54,8 @@
     </view>
     
     <!-- 打卡按钮 -->
-    <view">
-      <view class="button-wrapper class="bubble-btn" style="--primary: {{theme.primary}};" bindtap="onAddClick">
+    <view class="button-wrapper">
+      <view class="bubble-btn" style="--primary: {{theme.primary}};" bindtap="onAddClick">
         <!-- 主泡泡 -->
         <view class="bubble-main"></view>
         <!-- 高光 -->
