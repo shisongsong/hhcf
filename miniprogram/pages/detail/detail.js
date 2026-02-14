@@ -11,8 +11,7 @@ Page({
     currentPosterStyle: 'simple',
     showActionSheet: false,
     currentImageIndex: 0,
-    touchStartX: 0,
-    touchCurrentX: 0,
+    startX: 0,
     translateX: 0,
   },
 
@@ -30,48 +29,39 @@ Page({
   },
 
   onTouchStart: function(e) {
-    const touch = e.touches[0];
     this.setData({
-      touchStartX: touch.clientX,
-      touchCurrentX: touch.clientX,
-      translateX: 0,
+      startX: e.touches[0].clientX,
     });
   },
 
   onTouchMove: function(e) {
-    const { record, currentImageIndex, touchStartX } = this.data;
+    const { record, currentImageIndex, startX } = this.data;
     if (!record || !record.imageUrl) return;
     
-    const touch = e.touches[0];
-    const deltaX = touch.clientX - touchStartX;
+    const currentX = e.touches[0].clientX;
+    const deltaX = currentX - startX;
+    
     const screenWidth = wx.getSystemInfoSync().windowWidth;
-    
-    const canSwipePrev = currentImageIndex > 0;
-    const canSwipeNext = currentImageIndex < record.imageUrl.length - 1;
-    
-    let actualDelta = deltaX;
-    if ((deltaX > 0 && !canSwipePrev) || (deltaX < 0 && !canSwipeNext)) {
-      actualDelta = deltaX * 0.3;
-    }
+    const deltaRpx = (deltaX / screenWidth) * 750;
     
     this.setData({
-      touchCurrentX: touch.clientX,
-      translateX: actualDelta,
+      translateX: deltaRpx,
     });
   },
 
   onTouchEnd: function(e) {
-    const { record, currentImageIndex, translateX, touchStartX } = this.data;
+    const { record, currentImageIndex, startX } = this.data;
     if (!record || !record.imageUrl) return;
     
     const screenWidth = wx.getSystemInfoSync().windowWidth;
     const threshold = screenWidth * 0.25;
+    const deltaX = e.changedTouches[0].clientX - startX;
     
     this.setData({ translateX: 0 });
     
-    if (translateX > threshold && currentImageIndex > 0) {
+    if (deltaX > threshold && currentImageIndex > 0) {
       this.setData({ currentImageIndex: currentImageIndex - 1 });
-    } else if (translateX < -threshold && currentImageIndex < record.imageUrl.length - 1) {
+    } else if (deltaX < -threshold && currentImageIndex < record.imageUrl.length - 1) {
       this.setData({ currentImageIndex: currentImageIndex + 1 });
     }
   },

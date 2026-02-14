@@ -67,7 +67,7 @@
 }
 
 /* 卡片容器 */
-.card-container {
+.card-wrapper {
   position: absolute;
   top: 120rpx;
   left: 40rpx;
@@ -83,35 +83,21 @@
   position: absolute;
   width: 100%;
   height: 100%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  transition: transform 0.1s linear, opacity 0.3s ease;
+  transition: transform 0.05s linear;
+  will-change: transform;
 }
 
-.card-item.active {
-  transform: translateX(0);
-  z-index: 10;
-}
-
-.card-item.active .card-image-wrapper {
-  box-shadow: 
-    0 20rpx 60rpx rgba(0, 0, 0, 0.2),
-    0 10rpx 30rpx rgba(0, 0, 0, 0.15),
-    0 4rpx 12rpx rgba(0, 0, 0, 0.1);
-}
-
-.card-image-wrapper {
+.card-image-box {
   width: 100%;
+  height: 100%;
   aspect-ratio: 1;
   border-radius: 24rpx;
   overflow: hidden;
-  background: #f5f5f5;
   box-shadow: 
-    0 16rpx 48rpx rgba(0, 0, 0, 0.15),
-    0 8rpx 24rpx rgba(0, 0, 0, 0.12),
-    0 2rpx 8rpx rgba(0, 0, 0, 0.08);
-  transition: box-shadow 0.3s ease;
+    0 20rpx 60rpx rgba(0, 0, 0, 0.18),
+    0 10rpx 30rpx rgba(0, 0, 0, 0.12),
+    0 4rpx 12rpx rgba(0, 0, 0, 0.08);
+  background: #f5f5f5;
 }
 
 .card-image {

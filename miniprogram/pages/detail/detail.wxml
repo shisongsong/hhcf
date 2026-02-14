@@ -11,7 +11,7 @@
 
   <!-- 图片卡片堆叠 -->
   <view 
-    class="card-container"
+    class="card-wrapper"
     bindtouchstart="onTouchStart"
     bindtouchmove="onTouchMove"
     bindtouchend="onTouchEnd"
@@ -19,15 +19,11 @@
     <view 
       wx:for="{{record.imageUrl}}" 
       wx:key="index"
-      class="card-item {{currentImageIndex === index ? 'active' : ''}}"
-      style="transform: translateX({{currentImageIndex === index ? translateX : (currentImageIndex > index ? 120 : -120)}}px) scale({{currentImageIndex === index ? (1 - Math.abs(translateX) / 1000) : 0.9}});"
+      class="card-item"
+      style="z-index: {{record.imageUrl.length - Math.abs(currentImageIndex - index)}}; transform: translateX({{(index - currentImageIndex) * 40 + translateX}}rpx) scale({{1 - Math.abs(index - currentImageIndex) * 0.1}});"
     >
-      <view class="card-image-wrapper">
-        <image 
-          class="card-image" 
-          src="{{item}}" 
-          mode="aspectFill"
-        ></image>
+      <view class="card-image-box">
+        <image class="card-image" src="{{item}}" mode="aspectFill"></image>
       </view>
     </view>
   </view>
