@@ -25,17 +25,16 @@ jobs:
           
       - name: Setup Private Key
         run: |
-          echo "${{ secrets.PRIVATE_KEY }}" > ./private.key
-          chmod 400 ./private.key
+          echo "${{ secrets.PRIVATE_KEY }}" > ./miniprogram/private.key
+          chmod 400 ./miniprogram/private.key
           
       - name: Download toolchain
         run: |
-          miniprogram-ci tool install
+          cd miniprogram && miniprogram-ci tool install
           
-      - name: Build and Preview
+      - name: Build
         run: |
-          cd miniprogram
-          miniprogram-ci compile
+          cd miniprogram && miniprogram-ci compile
           
       - name: Upload to Experience
         run: |
