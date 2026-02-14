@@ -12,9 +12,8 @@ Page({
     showActionSheet: false,
     currentImageIndex: 0,
     touchStartX: 0,
-    touchStartY: 0,
     touchCurrentX: 0,
-    swipeProgress: 0,
+    translateX: 0,
   },
 
   onLoad: function (options) {
@@ -31,10 +30,11 @@ Page({
   },
 
   onTouchStart: function(e) {
+    const touch = e.touches[0];
     this.setData({
-      touchStartX: e.touches[0].clientX,
-      touchStartY: e.touches[0].clientY,
-      touchCurrentX: e.touches[0].clientX,
+      touchStartX: touch.clientX,
+      touchCurrentX: touch.clientX,
+      translateX: 0,
     });
   },
 
@@ -42,39 +42,37 @@ Page({
     const { record, currentImageIndex, touchStartX } = this.data;
     if (!record || !record.imageUrl) return;
     
-    const currentX = e.touches[0].clientX;
-    const deltaX = currentX - touchStartX;
+    const touch = e.touches[0];
+    const deltaX = touch.clientX - touchStartX;
     const screenWidth = wx.getSystemInfoSync().windowWidth;
-    const progress = deltaX / screenWidth;
     
-    let canSwipePrev = currentImageIndex > 0;
-    let canSwipeNext = currentImageIndex < record.imageUrl.length - 1;
+    const canSwipePrev = currentImageIndex > 0;
+    const canSwipeNext = currentImageIndex < record.imageUrl.length - 1;
     
-    if ((progress < 0 && !canSwipeNext) || (progress > 0 && !canSwipePrev)) {
-      return;
+    let actualDelta = deltaX;
+    if ((deltaX > 0 && !canSwipePrev) || (deltaX < 0 && !canSwipeNext)) {
+      actualDelta = deltaX * 0.3;
     }
     
     this.setData({
-      touchCurrentX: currentX,
-      swipeProgress: Math.max(-1, Math.min(1, progress)),
+      touchCurrentX: touch.clientX,
+      translateX: actualDelta,
     });
   },
 
   onTouchEnd: function(e) {
-    const { record, currentImageIndex, touchStartX, swipeProgress } = this.data;
+    const { record, currentImageIndex, translateX, touchStartX } = this.data;
     if (!record || !record.imageUrl) return;
     
-    const deltaX = e.changedTouches[0].clientX - touchStartX;
     const screenWidth = wx.getSystemInfoSync().windowWidth;
+    const threshold = screenWidth * 0.25;
     
-    this.setData({ swipeProgress: 0 });
+    this.setData({ translateX: 0 });
     
-    if (Math.abs(deltaX) > screenWidth * 0.25) {
-      if (deltaX > 0 && currentImageIndex > 0) {
-        this.setData({ currentImageIndex: currentImageIndex - 1 });
-      } else if (deltaX < 0 && currentImageIndex < record.imageUrl.length - 1) {
-        this.setData({ currentImageIndex: currentImageIndex + 1 });
-      }
+    if (translateX > threshold && currentImageIndex > 0) {
+      this.setData({ currentImageIndex: currentImageIndex - 1 });
+    } else if (translateX < -threshold && currentImageIndex < record.imageUrl.length - 1) {
+      this.setData({ currentImageIndex: currentImageIndex + 1 });
     }
   },
 
