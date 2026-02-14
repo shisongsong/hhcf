@@ -3,8 +3,8 @@ const app = getApp();
 
 Page({
   data: {
-    imagePath: '',
-    imageUrl: '',
+    imagePaths: [],
+    imageUrls: [],
     timestamp: 0,
     mealType: 'lunch',
     mealTypeInfo: {},
@@ -12,37 +12,40 @@ Page({
     mealTypes: [],
     isUploading: false,
     uploadProgress: '',
+    uploadedCount: 0,
+    totalCount: 0,
   },
 
   onLoad: function (options) {
-    const { imagePath, timestamp, mealType } = options;
-    const decodedImagePath = decodeURIComponent(imagePath);
+    const { imagePaths, timestamp, mealType } = options;
+    const decodedImagePaths = JSON.parse(decodeURIComponent(imagePaths));
     const mealTypeInfo = getMealTypeInfo(mealType);
     const title = generateTitle(mealType);
 
     this.setData({
-      imagePath: decodedImagePath,
+      imagePaths: decodedImagePaths,
       timestamp: parseInt(timestamp),
       mealType: mealType,
       mealTypeInfo: mealTypeInfo,
       title: title,
       mealTypes: getAllMealTypes(),
+      totalCount: decodedImagePaths.length,
     });
 
     wx.setNavigationBarTitle({
       title: `${mealTypeInfo.label}打卡`,
     });
 
-    this.uploadImageImmediately();
+    this.uploadImages();
   },
 
-  uploadImageImmediately: function () {
-    this.setData({ isUploading: true, uploadProgress: '压缩中...' });
+  uploadImages: function () {
+    this.setData({ isUploading: true, uploadProgress: '上传中...' });
 
-    this.uploadImage()
-      .then((imageUrl) => {
+    this.uploadAllImages()
+      .then((imageUrls) => {
         this.setData({
-          imageUrl: imageUrl,
+          imageUrls: imageUrls,
           isUploading: false,
           uploadProgress: '上传完成',
         });
@@ -59,9 +62,79 @@ Page({
       });
   },
 
+  uploadAllImages: async function () {
+    const { imagePaths } = this.data;
+    const uploadedUrls = [];
+
+    for (let i = 0; i < imagePaths.length; i++) {
+      this.setData({ uploadProgress: `上传 ${i + 1}/${imagePaths.length}` });
+      
+      try {
+        const url = await this.uploadSingleImage(imagePaths[i]);
+        uploadedUrls.push(url);
+        this.setData({ uploadedCount: i + 1 });
+      } catch (err) {
+        console.error(`第 ${i + 1} 张上传失败:`, err);
+        throw err;
+      }
+    }
+
+    return uploadedUrls;
+  },
+
+  uploadSingleImage: function (imagePath) {
+    return new Promise((resolve, reject) => {
+      wx.compressImage({
+        src: imagePath,
+        quality: 80,
+        success: (compressRes) => {
+          this.doUpload(compressRes.tempFilePath, resolve, reject);
+        },
+        fail: () => {
+          this.doUpload(imagePath, resolve, reject);
+        },
+      });
+    });
+  },
+
+  doUpload: function (filePath, resolve, reject) {
+    wx.uploadFile({
+      url: `${app.globalData.apiBase}/api/upload`,
+      filePath: filePath,
+      name: 'files',
+      header: {
+        'Authorization': `Bearer ${app.getToken()}`,
+      },
+      timeout: 60000,
+      success: (res) => {
+        if (res.statusCode >= 400) {
+          reject(new Error(`服务器错误: ${res.statusCode}`));
+          return;
+        }
+        try {
+          const data = JSON.parse(res.data);
+          if (data.success) {
+            resolve(data.data.imageUrls[0]);
+          } else {
+            reject(new Error(data.error || '上传失败'));
+          }
+        } catch (e) {
+          reject(new Error('解析响应失败: ' + res.data));
+        }
+      },
+      fail: (err) => {
+        if (err.errMsg.includes('timeout')) {
+          reject(new Error('上传超时，请重试'));
+        } else {
+          reject(new Error('网络请求失败: ' + (err.errMsg || '未知错误')));
+        }
+      },
+    });
+  },
+
   onRetryUpload: function () {
     if (this.data.isUploading) return;
-    this.uploadImageImmediately();
+    this.uploadImages();
   },
 
   onMealTypeChange: function (e) {
@@ -98,89 +171,12 @@ Page({
     wx.navigateBack();
   },
 
-  uploadImage: function () {
-    return new Promise((resolve, reject) => {
-      // 先压缩图片
-      wx.compressImage({
-        src: this.data.imagePath,
-        quality: 80, // 压缩质量
-        success: (compressRes) => {
-          const compressedPath = compressRes.tempFilePath;
-          
-          wx.uploadFile({
-            url: `${app.globalData.apiBase}/api/upload`,
-            filePath: compressedPath,
-            name: 'file',
-            header: {
-              'Authorization': `Bearer ${app.getToken()}`,
-            },
-            timeout: 60000,
-            success: (res) => {
-              if (res.statusCode >= 400) {
-                reject(new Error(`服务器错误: ${res.statusCode}`));
-                return;
-              }
-              try {
-                const data = JSON.parse(res.data);
-                if (data.success) {
-                  resolve(data.data.imageUrl);
-                } else {
-                  reject(new Error(data.error || '上传失败'));
-                }
-              } catch (e) {
-                reject(new Error('解析响应失败: ' + res.data));
-              }
-            },
-            fail: (err) => {
-              if (err.errMsg.includes('timeout')) {
-                reject(new Error('上传超时，请重试'));
-              } else {
-                reject(new Error('网络请求失败: ' + (err.errMsg || '未知错误')));
-              }
-            },
-          });
-        },
-        fail: (err) => {
-          // 压缩失败，使用原图上传
-          wx.uploadFile({
-            url: `${app.globalData.apiBase}/api/upload`,
-            filePath: this.data.imagePath,
-            name: 'file',
-            header: {
-              'Authorization': `Bearer ${app.getToken()}`,
-            },
-            timeout: 60000,
-            success: (res) => {
-              if (res.statusCode >= 400) {
-                reject(new Error(`服务器错误: ${res.statusCode}`));
-                return;
-              }
-              try {
-                const data = JSON.parse(res.data);
-                if (data.success) {
-                  resolve(data.data.imageUrl);
-                } else {
-                  reject(new Error(data.error || '上传失败'));
-                }
-              } catch (e) {
-                reject(new Error('解析响应失败: ' + res.data));
-              }
-            },
-            fail: (uploadErr) => {
-              reject(new Error('上传失败: ' + (uploadErr.errMsg || '未知错误')));
-            },
-          });
-        },
-      });
-    });
-  },
-
   saveRecord: function () {
     return app.request({
       url: '/api/records',
       method: 'POST',
       data: {
-        imageUrl: this.data.imageUrl,
+        imageUrls: this.data.imageUrls,
         mealType: this.data.mealType,
         title: this.data.title,
         timestamp: this.data.timestamp,
@@ -189,9 +185,9 @@ Page({
   },
 
   onConfirm: async function () {
-    if (!this.data.imageUrl) {
+    if (this.data.imageUrls.length === 0) {
       if (this.data.uploadProgress === '上传失败，点击重试') {
-        this.uploadImageImmediately();
+        this.uploadImages();
       }
       wx.showToast({ title: '请先上传图片', icon: 'none' });
       return;

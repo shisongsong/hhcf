@@ -121,10 +121,15 @@ app.get('/api/records', async (req, res) => {
 
   try {
     const [rows] = await pool.execute(
-      'SELECT id, openid, image_url as imageUrl, meal_type as mealType, title, timestamp, created_at as createdAt FROM records WHERE openid = ? ORDER BY timestamp DESC',
+      'SELECT id, openid, image_url, meal_type as mealType, title, timestamp, created_at as createdAt FROM records WHERE openid = ? ORDER BY timestamp DESC',
       [openid]
     );
-    res.json({ success: true, data: rows });
+    // 转换 image_url 字符串到数组
+    const records = rows.map(row => ({
+      ...row,
+      imageUrl: row.image_url ? JSON.parse(row.image_url) : []
+    }));
+    res.json({ success: true, data: records });
   } catch (err) {
     console.error('查询记录失败:', err);
     res.status(500).json({ error: '查询失败' });
@@ -136,16 +141,19 @@ app.post('/api/records', async (req, res) => {
   const openid = verifyToken(token);
   if (!openid) return res.status(401).json({ error: '未登录' });
 
-  const { imageUrl, mealType, title, timestamp } = req.body;
+  const { imageUrls, mealType, title, timestamp } = req.body;
   const id = uuidv4();
   const now = timestamp || Date.now();
+  
+  // 存储为 JSON 数组
+  const imageUrlJson = JSON.stringify(imageUrls || []);
 
   try {
     await pool.execute(
       'INSERT INTO records (id, openid, image_url, meal_type, title, timestamp) VALUES (?, ?, ?, ?, ?, ?)',
-      [id, openid, imageUrl, mealType, title, now]
+      [id, openid, imageUrlJson, mealType, title, now]
     );
-    const record = { id, openid, imageUrl, mealType, title, timestamp: now };
+    const record = { id, openid, imageUrls, mealType, title, timestamp: now };
     res.json({ success: true, data: record });
   } catch (err) {
     console.error('创建记录失败:', err);
@@ -160,12 +168,16 @@ app.get('/api/records/:id', async (req, res) => {
 
   try {
     const [rows] = await pool.execute(
-      'SELECT id, openid, image_url as imageUrl, meal_type as mealType, title, timestamp, created_at as createdAt FROM records WHERE id = ?',
+      'SELECT id, openid, image_url, meal_type as mealType, title, timestamp, created_at as createdAt FROM records WHERE id = ?',
       [req.params.id]
     );
     if (rows.length === 0) return res.status(404).json({ error: '记录不存在' });
 
-    const record = rows[0];
+    const record = {
+      ...rows[0],
+      imageUrl: rows[0].image_url ? JSON.parse(rows[0].image_url) : []
+    };
+    
     if (record.openid !== openid) {
       return res.status(403).json({ error: '无权限访问' });
     }
@@ -197,34 +209,47 @@ app.delete('/api/records/:id', async (req, res) => {
   }
 });
 
-app.post('/api/upload', upload.single('file'), (req, res) => {
+app.post('/api/upload', upload.array('files', 9), async (req, res) => {
   const token = req.headers.authorization?.replace('Bearer ', '');
   const openid = verifyToken(token);
   if (!openid) return res.status(401).json({ error: '未登录' });
 
-  if (!req.file) return res.status(400).json({ error: '没有文件' });
+  if (!req.files || req.files.length === 0) return res.status(400).json({ error: '没有文件' });
 
-  const key = `eating/${Date.now()}${path.extname(req.file.originalname) || '.jpg'}`;
+  try {
+    const uploadPromises = req.files.map(file => {
+      return new Promise((resolve, reject) => {
+        const key = `eating/${Date.now()}-${Math.random().toString(36).substr(2, 9)}${path.extname(file.originalname) || '.jpg'}`;
+        
+        const options = {
+          scope: `${qiniuConfig.bucket}:${key}`,
+        };
+        const putPolicy = new qiniu.rs.PutPolicy(options);
+        const uploadToken = putPolicy.uploadToken(mac);
 
-  const options = {
-    scope: `${qiniuConfig.bucket}:${key}`,
-  };
-  const putPolicy = new qiniu.rs.PutPolicy(options);
-  const uploadToken = putPolicy.uploadToken(mac);
+        const formUploader = new qiniu.form_up.FormUploader(config);
+        const putExtra = new qiniu.form_up.PutExtra();
 
-  const formUploader = new qiniu.form_up.FormUploader(config);
-  const putExtra = new qiniu.form_up.PutExtra();
+        formUploader.putFile(uploadToken, key, file.path, putExtra, (err, body, info) => {
+          if (err) {
+            reject(err);
+            return;
+          }
+          if (info.statusCode === 200) {
+            resolve(`${qiniuConfig.domain}/${key}`);
+          } else {
+            reject(new Error(body));
+          }
+        });
+      });
+    });
 
-  formUploader.putFile(uploadToken, key, req.file.path, putExtra, (err, body, info) => {
-    if (err) return res.status(500).json({ error: err.message });
-
-    if (info.statusCode === 200) {
-      const imageUrl = `${qiniuConfig.domain}/${key}`;
-      res.json({ success: true, data: { imageUrl, key } });
-    } else {
-      res.status(info.statusCode).json({ error: body });
-    }
-  });
+    const imageUrls = await Promise.all(uploadPromises);
+    res.json({ success: true, data: { imageUrls } });
+  } catch (err) {
+    console.error('上传失败:', err);
+    res.status(500).json({ error: err.message });
+  }
 });
 
 app.get('/api/qrcode', async (req, res) => {

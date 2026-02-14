@@ -10,6 +10,7 @@ Page({
     scale: 1,
     currentPosterStyle: 'simple',
     showActionSheet: false,
+    currentImageIndex: 0,
   },
 
   onLoad: function (options) {
@@ -23,6 +24,21 @@ Page({
         wx.navigateBack();
       }, 1500);
     }
+  },
+
+  onImagePreview: function (e) {
+    const { index } = e.currentTarget.dataset;
+    const { record } = this.data;
+    wx.previewImage({
+      urls: record.imageUrl,
+      current: record.imageUrl[index],
+    });
+  },
+
+  onSwiperChange: function (e) {
+    this.setData({
+      currentImageIndex: e.detail.current,
+    });
   },
 
   loadRecord: async function (id) {

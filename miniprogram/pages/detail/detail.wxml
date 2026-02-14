@@ -9,13 +9,16 @@
     </view>
   </view>
 
-  <!-- 全屏图片 -->
-  <view class="image-viewer">
-    <image
-      class="full-image"
-      src="{{record.imageUrl}}"
-      mode="aspectFit"
-    ></image>
+  <!-- 图片展示 -->
+  <view class="image-section">
+    <swiper class="image-swiper" indicator-dots="{{record.imageUrl.length > 1}}" indicator-color="rgba(255,255,255,0.5)" indicator-active-color="#fff" bindchange="onSwiperChange">
+      <swiper-item wx:for="{{record.imageUrl}}" wx:key="index">
+        <image class="full-image" src="{{item}}" mode="aspectFit" bindtap="onImagePreview" data-index="{{index}}"></image>
+      </swiper-item>
+    </swiper>
+    <view class="image-count" wx:if="{{record.imageUrl.length > 1}}">
+      <text>{{currentImageIndex + 1}}/{{record.imageUrl.length}}</text>
+    </view>
   </view>
 
   <!-- 顶部操作栏 -->

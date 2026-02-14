@@ -10,18 +10,24 @@
 
   <!-- 图片展示区 -->
   <view class="image-section">
-    <view class="image-frame">
-      <image class="food-image" src="{{imagePath}}" mode="aspectFill"></image>
-      <!-- 上传状态遮罩 -->
-      <view class="upload-overlay" wx:if="{{isUploading || uploadProgress}}">
-        <view class="upload-card">
-          <view class="spinner-wrapper">
-            <view class="spinner" wx:if="{{isUploading}}"></view>
-            <text class="success-icon" wx:if="{{!isUploading && uploadProgress === '上传完成'}}">✓</text>
-          </view>
-          <text class="status-text">{{uploadProgress || '上传中...'}}</text>
-          <text class="retry-text" wx:if="{{uploadProgress === '上传失败，点击重试'}}" bindtap="onRetryUpload">点击重试</text>
+    <view class="image-grid">
+      <view 
+        wx:for="{{imagePaths}}" 
+        wx:key="index" 
+        class="image-item"
+      >
+        <image class="food-image" src="{{item}}" mode="aspectFill"></image>
+      </view>
+    </view>
+    <!-- 上传状态遮罩 -->
+    <view class="upload-overlay" wx:if="{{isUploading || uploadProgress}}">
+      <view class="upload-card">
+        <view class="spinner-wrapper">
+          <view class="spinner" wx:if="{{isUploading}}"></view>
+          <text class="success-icon" wx:if="{{!isUploading && uploadProgress === '上传完成'}}">✓</text>
         </view>
+        <text class="status-text">{{uploadProgress || '上传中...'}}</text>
+        <text class="retry-text" wx:if="{{uploadProgress === '上传失败，点击重试'}}" bindtap="onRetryUpload">点击重试</text>
       </view>
     </view>
   </view>
@@ -66,7 +72,7 @@
       <text>返回修改</text>
     </view>
     <view class="btn btn-confirm {{isUploading ? 'disabled' : ''}}" bindtap="onConfirm">
-      <text>{{imageUrl ? '✓ 保存' : '保存记录'}}</text>
+      <text>{{imageUrls.length > 0 ? '✓ 保存' : '保存记录'}}</text>
     </view>
   </view>
 </view>

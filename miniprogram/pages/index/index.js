@@ -189,15 +189,15 @@ Page({
     if (!loggedIn) return;
 
     wx.chooseMedia({
-      count: 1,
+      count: 9,
       mediaType: ['image'],
       sourceType: ['album', 'camera'],
       success: (res) => {
-        const tempFilePath = res.tempFiles[0].tempFilePath;
+        const tempFilePaths = res.tempFiles.map(f => f.tempFilePath);
         const timestamp = Date.now();
         const mealTypeInfo = recognizeMealType(new Date(timestamp));
         wx.navigateTo({
-          url: `/pages/preview/preview?imagePath=${encodeURIComponent(tempFilePath)}&timestamp=${timestamp}&mealType=${mealTypeInfo.key}`,
+          url: `/pages/preview/preview?imagePaths=${encodeURIComponent(JSON.stringify(tempFilePaths))}&timestamp=${timestamp}&mealType=${mealTypeInfo.key}`,
         });
       },
       fail: (err) => {
