@@ -223,17 +223,3 @@
   <!-- 隐藏的 canvas 用于裁剪 -->
   <canvas canvas-id="cropCanvas" style="width: 600px; height: 600px; position: absolute; left: -9999px;"></canvas>
 </view>
-      </view>
-      <view class="popup-actions">
-        <view class="popup-action-btn" bindtap="onSharePoster">
-          <text class="action-icon">🖼️</text>
-          <text class="action-text">生成海报</text>
-        </view>
-        <view class="popup-action-btn" bindtap="onShareMiniApp">
-          <text class="action-icon">📤</text>
-          <text class="action-text">分享好友</text>
-        </view>
-      </view>
-    </view>
-  </view>
-</view>
