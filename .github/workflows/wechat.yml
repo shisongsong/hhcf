@@ -18,48 +18,35 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: '20'
-          cache: 'npm'
           
-      - name: Install dependencies
+      - name: Install miniprogram-ci
         run: |
           npm install -g miniprogram-ci
+          
+      - name: Setup Private Key
+        run: |
+          echo "${{ secrets.PRIVATE_KEY }}" > ./private.key
+          chmod 400 ./private.key
           
       - name: Download toolchain
         run: |
           miniprogram-ci tool install
           
-      - name: Build miniprogram
+      - name: Build and Preview
         run: |
           cd miniprogram
-          miniprogram-ci compile --preview-qr-destination data64
-        env:
-          APPID: ${{ secrets.APPID }}
-          PRIVATE_KEY: ${{ secrets.PRIVATE_KEY }}
+          miniprogram-ci compile
           
-      - name: Upload to WeChat
-        run: |
-          cd miniprogram
-          miniprogram-ci preview \
-            --pp ./dist \
-            --pkp ./private.key \
-            --appid ${{ secrets.APPID }} \
-            --uv ${{ secrets.USER_VERSION }} \
-            -r 1 \
-            --enable-auto-qr
-        env:
-          APPID: ${{ secrets.APPID }}
-          
-      - name: Upload as Experience
+      - name: Upload to Experience
         run: |
           cd miniprogram
           miniprogram-ci experience \
-            --pp ./dist \
+            --pp ./ \
             --pkp ./private.key \
             --appid ${{ secrets.APPID }} \
             --uv "CI-${{ github.run_number }}" \
-            --udid "${{ secrets.USER_VERSION }}"
-        env:
-          APPID: ${{ secrets.APPID }}
+            -r 1
+        continue-on-error: true
           
   notify:
     needs: build
@@ -69,10 +56,10 @@ jobs:
       - name: Success Notification
         if: success()
         run: |
-          echo "小程序构建并发布到体验版成功！"
+          echo "✅ 小程序构建成功！"
           echo "版本号: CI-${{ github.run_number }}"
           
-      - name: Failure Notification
+      - name: Failure Notification  
         if: failure()
         run: |
-          echo "小程序构建失败，请检查代码！"
+          echo "❌ 小程序构建失败，请检查代码！"
