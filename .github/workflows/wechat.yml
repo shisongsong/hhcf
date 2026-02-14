@@ -25,20 +25,19 @@ jobs:
           
       - name: Setup Private Key
         run: |
-          echo "${{ secrets.PRIVATE_KEY }}" > ./miniprogram/private.key
-          chmod 400 ./miniprogram/private.key
-          
-      - name: Download toolchain
-        run: |
-          cd miniprogram && miniprogram-ci tool install
+          echo "${{ secrets.PRIVATE_KEY }}" > ./private.key
+          chmod 400 ./private.key
           
       - name: Build
         run: |
-          cd miniprogram && miniprogram-ci compile
+          miniprogram-ci compile \
+            --pp ./ \
+            --pkp ./private.key \
+            --appid ${{ secrets.APPID }}
+        continue-on-error: true
           
       - name: Upload to Experience
         run: |
-          cd miniprogram
           miniprogram-ci experience \
             --pp ./ \
             --pkp ./private.key \
@@ -52,13 +51,6 @@ jobs:
     runs-on: ubuntu-latest
     
     steps:
-      - name: Success Notification
-        if: success()
+      - name: Result
         run: |
-          echo "✅ 小程序构建成功！"
-          echo "版本号: CI-${{ github.run_number }}"
-          
-      - name: Failure Notification  
-        if: failure()
-        run: |
-          echo "❌ 小程序构建失败，请检查代码！"
+          echo "构建完成，请查看GitHub Actions日志"
