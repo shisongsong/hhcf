@@ -366,12 +366,11 @@ Page({
       return;
     }
 
-    wx.showLoading({ title: '处理中...' });
+    wx.showLoading({ title: '裁剪中...' });
 
     try {
-      const croppedPhotos = await this.cropPhotos(cameraPhotos);
+      const croppedPhotos = await this.processPhotosWithCrop(cameraPhotos);
       
-      const tempFilePaths = croppedPhotos;
       const timestamp = Date.now();
       const mealTypeInfo = recognizeMealType(new Date(timestamp));
       
@@ -379,7 +378,7 @@ Page({
       wx.hideLoading();
       
       wx.navigateTo({
-        url: `/pages/preview/preview?imagePaths=${encodeURIComponent(JSON.stringify(tempFilePaths))}&timestamp=${timestamp}&mealType=${mealTypeInfo.key}`,
+        url: `/pages/preview/preview?imagePaths=${encodeURIComponent(JSON.stringify(croppedPhotos))}&timestamp=${timestamp}&mealType=${mealTypeInfo.key}`,
       });
     } catch (err) {
       wx.hideLoading();
@@ -388,15 +387,10 @@ Page({
     }
   },
 
-  cropPhotos: function(photos) {
+  processPhotosWithCrop: function(photos) {
     return new Promise(async (resolve) => {
-      const croppedPaths = [];
-      
-      for (let i = 0; i < photos.length; i++) {
-        croppedPaths.push(photos[i]);
-      }
-      
-      resolve(croppedPaths);
+      const croppedPhotos = [...photos];
+      resolve(croppedPhotos);
     });
   },
 

@@ -5,33 +5,51 @@
     <view class="record-count" wx:if="{{records.length > 0}}">{{records.length}} 条</view>
   </view>
 
-  <!-- 九宫格列表 -->
+  <!-- 时间轴列表 -->
   <scroll-view 
-    class="grid-container" 
+    class="timeline" 
     scroll-y 
     enhanced 
     show-scrollbar="{{false}}"
   >
-    <view class="photo-grid" wx:if="{{records.length > 0}}">
+    <view class="timeline-list" wx:if="{{records.length > 0}}">
       <view 
         wx:for="{{records}}"
         wx:key="id"
-        class="grid-item"
+        class="timeline-item"
         data-id="{{item.id}}"
         bindtap="onRecordTap"
       >
-        <image 
-          class="grid-image" 
-          src="{{item.imageUrl[0]}}" 
-          mode="aspectFill"
-          lazy-load
-        ></image>
-        <view class="grid-overlay" style="background: linear-gradient(180deg, transparent 50%, {{item.mealInfo.color}}CC 100%);">
-          <view class="grid-meal-tag" style="background: {{item.mealInfo.color}};">
-            <text>{{item.mealInfo.emoji}}</text>
+        <!-- 左侧时间点 -->
+        <view class="timeline-left">
+          <view class="time-dot" style="background: {{item.mealInfo.color}};">
+            <view class="dot-inner" style="background: {{item.mealInfo.color}};"></view>
           </view>
-          <view class="grid-multi-badge" wx:if="{{item.imageUrl.length > 1}}">
-            <text>{{item.imageUrl.length}}</text>
+          <view class="time-line" style="background: {{item.mealInfo.color}}20;"></view>
+        </view>
+        
+        <!-- 右侧内容 -->
+        <view class="timeline-content">
+          <view class="content-header">
+            <text class="meal-label" style="color: {{item.mealInfo.color}};">{{item.mealInfo.emoji}} {{item.mealInfo.label}}</text>
+            <text class="record-time">{{item.formattedTime}}</text>
+          </view>
+          
+          <!-- 多图九宫格 -->
+          <view class="image-grid" style="grid-template-columns: repeat({{item.imageUrl.length > 3 ? 3 : item.imageUrl.length}}, 1fr);">
+            <view 
+              wx:for="{{item.imageUrl}}" 
+              wx:for-item="img" 
+              wx:for-index="imgIndex"
+              wx:key="imgIndex"
+              class="grid-image-item"
+            >
+              <image class="grid-img" src="{{img}}" mode="aspectFill"></image>
+            </view>
+          </view>
+          
+          <view class="content-footer">
+            <text class="record-title">{{item.title}}</text>
           </view>
         </view>
       </view>

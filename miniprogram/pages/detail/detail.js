@@ -11,6 +11,8 @@ Page({
     currentPosterStyle: 'simple',
     showActionSheet: false,
     currentImageIndex: 0,
+    touchStartX: 0,
+    touchStartY: 0,
   },
 
   onLoad: function (options) {
@@ -23,6 +25,32 @@ Page({
       setTimeout(() => {
         wx.navigateBack();
       }, 1500);
+    }
+  },
+
+  onTouchStart: function(e) {
+    this.setData({
+      touchStartX: e.touches[0].clientX,
+      touchStartY: e.touches[0].clientY,
+    });
+  },
+
+  onTouchMove: function(e) {
+    // Can add visual feedback here
+  },
+
+  onTouchEnd: function(e) {
+    const { record, currentImageIndex } = this.data;
+    if (!record || !record.imageUrl) return;
+    
+    const deltaX = e.changedTouches[0].clientX - this.data.touchStartX;
+    
+    if (Math.abs(deltaX) > 50) {
+      if (deltaX > 0 && currentImageIndex > 0) {
+        this.setData({ currentImageIndex: currentImageIndex - 1 });
+      } else if (deltaX < 0 && currentImageIndex < record.imageUrl.length - 1) {
+        this.setData({ currentImageIndex: currentImageIndex + 1 });
+      }
     }
   },
 

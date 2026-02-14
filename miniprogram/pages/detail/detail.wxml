@@ -9,14 +9,21 @@
     </view>
   </view>
 
-  <!-- 图片展示 - 多个独立卡片 -->
-  <scroll-view class="image-scroll" scroll-y enhanced show-scrollbar="{{false}}">
-    <view class="image-list">
-      <view class="image-card" wx:for="{{record.imageUrl}}" wx:key="index">
-        <image class="card-image" src="{{item}}" mode="aspectFill" bindtap="onImagePreview" data-index="{{index}}"></image>
-      </view>
+  <!-- 图片卡片堆叠 -->
+  <view class="card-stack">
+    <view 
+      wx:for="{{record.imageUrl}}" 
+      wx:key="index"
+      class="card-item {{currentImageIndex === index ? 'active' : (currentImageIndex > index ? 'prev' : 'next')}}"
+      style="--index: {{index}}; --total: {{record.imageUrl.length}}; --color: {{mealTypeInfo.color}};"
+      bindtouchstart="onTouchStart"
+      bindtouchmove="onTouchMove"
+      bindtouchend="onTouchEnd"
+    >
+      <image class="card-image" src="{{item}}" mode="aspectFill"></image>
+      <view class="card-frame" style="border-color: {{mealTypeInfo.color}};"></view>
     </view>
-  </scroll-view>
+  </view>
 
   <!-- 底部信息栏 -->
   <view class="bottom-bar">
@@ -27,8 +34,8 @@
           <text class="meal-label">{{mealTypeInfo.label}}</text>
         </view>
       </view>
-      <view class="time-info">
-        <text class="time-text">{{formattedTime.full}}</text>
+      <view class="page-indicator">
+        <text>{{currentImageIndex + 1}} / {{record.imageUrl.length}}</text>
       </view>
       <view class="menu-btn" bindtap="onMoreTap">
         <text class="menu-icon">•••</text>

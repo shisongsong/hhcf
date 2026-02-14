@@ -29,73 +29,112 @@
   color: #8B7355;
 }
 
-/* 九宫格 */
-.grid-container {
+/* 时间轴 */
+.timeline {
   flex: 1;
   min-height: 0;
+  padding: 24rpx 32rpx;
 }
 
-.photo-grid {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 4rpx;
-  padding: 4rpx;
-}
-
-.grid-item {
-  position: relative;
-  aspect-ratio: 1;
-  overflow: hidden;
-}
-
-.grid-image {
-  width: 100%;
-  height: 100%;
-  display: block;
-  transition: transform 0.3s ease;
-}
-
-.grid-item:active .grid-image {
-  transform: scale(0.95);
-}
-
-.grid-overlay {
-  position: absolute;
-  bottom: 0;
-  left: 0;
-  right: 0;
-  height: 50%;
+.timeline-list {
   display: flex;
   flex-direction: column;
-  justify-content: flex-end;
-  padding: 12rpx;
 }
 
-.grid-meal-tag {
-  width: 48rpx;
-  height: 48rpx;
-  border-radius: 12rpx;
+.timeline-item {
   display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 26rpx;
-  box-shadow: 0 4rpx 12rpx rgba(0, 0, 0, 0.2);
+  margin-bottom: 32rpx;
 }
 
-.grid-multi-badge {
-  position: absolute;
-  top: 12rpx;
-  right: 12rpx;
+/* 左侧时间点 */
+.timeline-left {
   width: 40rpx;
-  height: 40rpx;
-  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  flex-shrink: 0;
+}
+
+.time-dot {
+  width: 24rpx;
+  height: 24rpx;
   border-radius: 50%;
   display: flex;
   align-items: center;
   justify-content: center;
-  color: #fff;
-  font-size: 22rpx;
+  flex-shrink: 0;
+}
+
+.dot-inner {
+  width: 12rpx;
+  height: 12rpx;
+  border-radius: 50%;
+}
+
+.time-line {
+  width: 4rpx;
+  flex: 1;
+  min-height: 40rpx;
+  border-radius: 2rpx;
+  margin-top: 8rpx;
+}
+
+/* 右侧内容 */
+.timeline-content {
+  flex: 1;
+  margin-left: 24rpx;
+  background: #fff;
+  border-radius: 24rpx;
+  padding: 20rpx;
+  box-shadow: 0 4rpx 20rpx rgba(0, 0, 0, 0.04);
+}
+
+.content-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 16rpx;
+}
+
+.meal-label {
+  font-size: 26rpx;
   font-weight: 600;
+}
+
+.record-time {
+  font-size: 22rpx;
+  color: #8B7355;
+}
+
+/* 九宫格图片 */
+.image-grid {
+  display: grid;
+  gap: 8rpx;
+  margin-bottom: 12rpx;
+}
+
+.grid-image-item {
+  position: relative;
+  aspect-ratio: 1;
+  border-radius: 12rpx;
+  overflow: hidden;
+}
+
+.grid-img {
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+
+.content-footer {
+  display: flex;
+  align-items: center;
+}
+
+.record-title {
+  font-size: 26rpx;
+  color: #5D4037;
+  font-weight: 500;
 }
 
 /* 空状态 */
