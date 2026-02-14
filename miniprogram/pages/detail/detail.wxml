@@ -9,24 +9,21 @@
     </view>
   </view>
 
-  <!-- 图片卡片堆叠 -->
-  <view 
-    class="card-wrapper"
-    bindtouchstart="onTouchStart"
-    bindtouchmove="onTouchMove"
-    bindtouchend="onTouchEnd"
+  <!-- 图片轮播 -->
+  <swiper 
+    class="image-swiper"
+    current="{{currentImageIndex}}"
+    bindchange="onSwiperChange"
+    circular="false"
+    indicator-dots="false"
+    duration="300"
   >
-    <view 
-      wx:for="{{record.imageUrl}}" 
-      wx:key="index"
-      class="card-item"
-      style="z-index: {{record.imageUrl.length - Math.abs(currentImageIndex - index)}}; transform: translateX({{(index - currentImageIndex) * 60 + translateX}}px) scale({{1 - Math.abs(index - currentImageIndex) * 0.1}});"
-    >
-      <view class="card-image-box">
-        <image class="card-image" src="{{item}}" mode="aspectFill"></image>
+    <swiper-item wx:for="{{record.imageUrl}}" wx:key="index">
+      <view class="swiper-item-content">
+        <image class="swiper-image" src="{{item}}" mode="aspectFill"></image>
       </view>
-    </view>
-  </view>
+    </swiper-item>
+  </swiper>
 
   <!-- 底部信息栏 -->
   <view class="bottom-bar">

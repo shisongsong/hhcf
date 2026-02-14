@@ -11,8 +11,6 @@ Page({
     currentPosterStyle: 'simple',
     showActionSheet: false,
     currentImageIndex: 0,
-    startX: 0,
-    translateX: 0,
   },
 
   onLoad: function (options) {
@@ -28,38 +26,10 @@ Page({
     }
   },
 
-  onTouchStart: function(e) {
+  onSwiperChange: function(e) {
     this.setData({
-      startX: e.touches[0].clientX,
+      currentImageIndex: e.detail.current,
     });
-  },
-
-  onTouchMove: function(e) {
-    const { record, currentImageIndex, startX } = this.data;
-    if (!record || !record.imageUrl) return;
-    
-    const currentX = e.touches[0].clientX;
-    const deltaX = currentX - startX;
-    
-    this.setData({
-      translateX: deltaX,
-    });
-  },
-
-  onTouchEnd: function(e) {
-    const { record, currentImageIndex, startX } = this.data;
-    if (!record || !record.imageUrl) return;
-    
-    const threshold = 50;
-    const deltaX = e.changedTouches[0].clientX - startX;
-    
-    this.setData({ translateX: 0 });
-    
-    if (deltaX > threshold && currentImageIndex > 0) {
-      this.setData({ currentImageIndex: currentImageIndex - 1 });
-    } else if (deltaX < -threshold && currentImageIndex < record.imageUrl.length - 1) {
-      this.setData({ currentImageIndex: currentImageIndex + 1 });
-    }
   },
 
   onImagePreview: function (e) {
