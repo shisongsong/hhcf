@@ -13,6 +13,8 @@ Page({
     currentImageIndex: 0,
     touchStartX: 0,
     touchStartY: 0,
+    touchCurrentX: 0,
+    swipeProgress: 0,
   },
 
   onLoad: function (options) {
@@ -32,20 +34,42 @@ Page({
     this.setData({
       touchStartX: e.touches[0].clientX,
       touchStartY: e.touches[0].clientY,
+      touchCurrentX: e.touches[0].clientX,
     });
   },
 
   onTouchMove: function(e) {
-    // Can add visual feedback here
+    const { record, currentImageIndex, touchStartX } = this.data;
+    if (!record || !record.imageUrl) return;
+    
+    const currentX = e.touches[0].clientX;
+    const deltaX = currentX - touchStartX;
+    const screenWidth = wx.getSystemInfoSync().windowWidth;
+    const progress = deltaX / screenWidth;
+    
+    let canSwipePrev = currentImageIndex > 0;
+    let canSwipeNext = currentImageIndex < record.imageUrl.length - 1;
+    
+    if ((progress < 0 && !canSwipeNext) || (progress > 0 && !canSwipePrev)) {
+      return;
+    }
+    
+    this.setData({
+      touchCurrentX: currentX,
+      swipeProgress: Math.max(-1, Math.min(1, progress)),
+    });
   },
 
   onTouchEnd: function(e) {
-    const { record, currentImageIndex } = this.data;
+    const { record, currentImageIndex, touchStartX, swipeProgress } = this.data;
     if (!record || !record.imageUrl) return;
     
-    const deltaX = e.changedTouches[0].clientX - this.data.touchStartX;
+    const deltaX = e.changedTouches[0].clientX - touchStartX;
+    const screenWidth = wx.getSystemInfoSync().windowWidth;
     
-    if (Math.abs(deltaX) > 50) {
+    this.setData({ swipeProgress: 0 });
+    
+    if (Math.abs(deltaX) > screenWidth * 0.25) {
       if (deltaX > 0 && currentImageIndex > 0) {
         this.setData({ currentImageIndex: currentImageIndex - 1 });
       } else if (deltaX < 0 && currentImageIndex < record.imageUrl.length - 1) {

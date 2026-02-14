@@ -12,47 +12,58 @@
     enhanced 
     show-scrollbar="{{false}}"
   >
+    <!-- 分组的时间轴 -->
     <view class="timeline-list" wx:if="{{records.length > 0}}">
-      <view 
-        wx:for="{{records}}"
-        wx:key="id"
-        class="timeline-item"
-        data-id="{{item.id}}"
-        bindtap="onRecordTap"
-      >
-        <!-- 左侧时间点 -->
-        <view class="timeline-left">
-          <view class="time-dot" style="background: {{item.mealInfo.color}};">
-            <view class="dot-inner" style="background: {{item.mealInfo.color}};"></view>
-          </view>
-          <view class="time-line" style="background: {{item.mealInfo.color}}20;"></view>
+      <block wx:for="{{groupKeys}}" wx:key="index">
+        <!-- 日期分组标题 -->
+        <view class="date-group-title">
+          <text>{{item}}</text>
         </view>
         
-        <!-- 右侧内容 -->
-        <view class="timeline-content">
-          <view class="content-header">
-            <text class="meal-label" style="color: {{item.mealInfo.color}};">{{item.mealInfo.emoji}} {{item.mealInfo.label}}</text>
-            <text class="record-time">{{item.formattedTime}}</text>
+        <!-- 该日期下的所有记录 -->
+        <view 
+          wx:for="{{groupedRecords[item]}}"
+          wx:for-item="record"
+          wx:key="id"
+          class="timeline-item"
+          data-id="{{record.id}}"
+          bindtap="onRecordTap"
+          style="--delay: {{index * 0.05}}s;"
+        >
+          <!-- 左侧时间点 -->
+          <view class="timeline-left">
+            <view class="time-dot" style="background: {{record.mealInfo.color}};">
+              <view class="dot-inner" style="background: {{record.mealInfo.color}};"></view>
+            </view>
+            <view class="time-line" style="background: {{record.mealInfo.color}}20;"></view>
           </view>
           
-          <!-- 多图九宫格 -->
-          <view class="image-grid">
-            <view 
-              wx:for="{{item.imageUrl}}" 
-              wx:for-item="img" 
-              wx:for-index="imgIndex"
-              wx:key="imgIndex"
-              class="grid-image-item"
-            >
-              <image class="grid-img" src="{{img}}" mode="aspectFill"></image>
+          <!-- 右侧内容 -->
+          <view class="timeline-content">
+            <view class="content-header">
+              <text class="meal-label" style="color: {{record.mealInfo.color}};">{{record.mealInfo.emoji}} {{record.mealInfo.label}}</text>
+              <text class="record-time">{{record.formattedTime}}</text>
+            </view>
+            
+            <!-- 多图九宫格 -->
+            <view class="image-grid">
+              <view 
+                wx:for="{{record.imageUrl}}" 
+                wx:for-item="img" 
+                wx:for-index="imgIndex"
+                wx:key="imgIndex"
+                class="grid-image-item"
+              >
+                <image class="grid-img" src="{{img}}" mode="aspectFill"></image>
+              </view>
+            </view>
+            
+            <view class="content-footer">
+              <text class="record-title">{{record.title}}</text>
             </view>
           </view>
-          
-          <view class="content-footer">
-            <text class="record-title">{{item.title}}</text>
-          </view>
         </view>
-      </view>
+      </block>
     </view>
 
     <!-- 空状态 -->

@@ -10,18 +10,19 @@
   </view>
 
   <!-- 图片卡片堆叠 -->
-  <view class="card-stack">
+  <view class="card-stack" style="--total: {{record.imageUrl.length}};">
     <view 
       wx:for="{{record.imageUrl}}" 
       wx:key="index"
       class="card-item {{currentImageIndex === index ? 'active' : (currentImageIndex > index ? 'prev' : 'next')}}"
-      style="--index: {{index}}; --total: {{record.imageUrl.length}}; --color: {{mealTypeInfo.color}};"
+      style="--index: {{index}}; --color: {{mealTypeInfo.color}};"
       bindtouchstart="onTouchStart"
       bindtouchmove="onTouchMove"
       bindtouchend="onTouchEnd"
     >
-      <image class="card-image" src="{{item}}" mode="aspectFill"></image>
-      <view class="card-frame" style="border-color: {{mealTypeInfo.color}};"></view>
+      <view class="card-inner">
+        <image class="card-image" src="{{item}}" mode="aspectFill"></image>
+      </view>
     </view>
   </view>
 
