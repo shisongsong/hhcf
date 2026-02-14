@@ -81,40 +81,33 @@
   }
 }
 
-/* 图片展示 */
-.image-section {
+/* 图片滚动区域 */
+.image-scroll {
   position: absolute;
-  top: 100rpx;
-  left: 30rpx;
-  right: 30rpx;
-  bottom: 200rpx;
+  top: 120rpx;
+  left: 0;
+  right: 0;
+  bottom: 180rpx;
   z-index: 1;
+}
+
+.image-list {
+  padding: 30rpx;
+  padding-bottom: 200rpx;
+}
+
+.image-card {
+  background: #fff;
   border-radius: 24rpx;
   overflow: hidden;
-  background: #fff;
+  margin-bottom: 24rpx;
   box-shadow: 0 8rpx 40rpx rgba(180, 120, 100, 0.15);
 }
 
-.image-swiper {
+.card-image {
   width: 100%;
-  height: 100%;
-}
-
-.full-image {
-  width: 100%;
-  height: 100%;
+  height: 500rpx;
   display: block;
-}
-
-.image-count {
-  position: absolute;
-  bottom: 20rpx;
-  right: 20rpx;
-  background: rgba(0, 0, 0, 0.4);
-  color: #fff;
-  padding: 8rpx 16rpx;
-  border-radius: 20rpx;
-  font-size: 24rpx;
 }
 
 /* 顶部操作栏 */

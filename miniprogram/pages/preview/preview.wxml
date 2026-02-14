@@ -18,6 +18,10 @@
       >
         <image class="food-image" src="{{item}}" mode="aspectFill"></image>
       </view>
+      <view class="add-image-btn" bindtap="onAddMoreImages">
+        <text class="add-icon">+</text>
+        <text class="add-text">添加更多</text>
+      </view>
     </view>
     <!-- 上传状态遮罩 -->
     <view class="upload-overlay" wx:if="{{isUploading || uploadProgress}}">

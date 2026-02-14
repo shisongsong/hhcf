@@ -68,10 +68,13 @@
               <view class="card-image-wrapper">
                 <image 
                   class="card-image" 
-                  src="{{record.imageUrl}}" 
+                  src="{{record.imageUrl[0]}}" 
                   mode="aspectFill"
                   lazy-load
                 ></image>
+                <view class="image-count-badge" wx:if="{{record.imageUrl.length > 1}}">
+                  <text>{{record.imageUrl.length}}</text>
+                </view>
                 <view class="meal-tag" style="background: linear-gradient(135deg, {{record.mealInfo.color}} 0%, {{record.mealInfo.color}}CC 100%);">
                   <text class="meal-emoji">{{record.mealInfo.emoji}}</text>
                 </view>

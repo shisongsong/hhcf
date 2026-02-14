@@ -137,6 +137,23 @@ Page({
     this.uploadImages();
   },
 
+  onAddMoreImages: function () {
+    wx.chooseMedia({
+      count: 9 - this.data.imagePaths.length,
+      mediaType: ['image'],
+      sourceType: ['album', 'camera'],
+      success: (res) => {
+        const newPaths = res.tempFiles.map(f => f.tempFilePath);
+        const allPaths = [...this.data.imagePaths, ...newPaths];
+        this.setData({
+          imagePaths: allPaths,
+          totalCount: allPaths.length,
+        });
+        this.uploadImages();
+      },
+    });
+  },
+
   onMealTypeChange: function (e) {
     const { key } = e.currentTarget.dataset;
     const mealTypeInfo = getMealTypeInfo(key);

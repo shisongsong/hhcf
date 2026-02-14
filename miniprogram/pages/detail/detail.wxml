@@ -9,30 +9,14 @@
     </view>
   </view>
 
-  <!-- 图片展示 -->
-  <view class="image-section">
-    <swiper class="image-swiper" indicator-dots="{{record.imageUrl.length > 1}}" indicator-color="rgba(255,255,255,0.5)" indicator-active-color="#fff" bindchange="onSwiperChange">
-      <swiper-item wx:for="{{record.imageUrl}}" wx:key="index">
-        <image class="full-image" src="{{item}}" mode="aspectFit" bindtap="onImagePreview" data-index="{{index}}"></image>
-      </swiper-item>
-    </swiper>
-    <view class="image-count" wx:if="{{record.imageUrl.length > 1}}">
-      <text>{{currentImageIndex + 1}}/{{record.imageUrl.length}}</text>
-    </view>
-  </view>
-
-  <!-- 顶部操作栏 -->
-  <view class="top-bar">
-    <view class="top-actions">
-      <view class="action-btn" bindtap="onMoreTap">
-        <view class="more-icon">
-          <view class="more-dot"></view>
-          <view class="more-dot"></view>
-          <view class="more-dot"></view>
-        </view>
+  <!-- 图片展示 - 多个独立卡片 -->
+  <scroll-view class="image-scroll" scroll-y enhanced show-scrollbar="{{false}}">
+    <view class="image-list">
+      <view class="image-card" wx:for="{{record.imageUrl}}" wx:key="index">
+        <image class="card-image" src="{{item}}" mode="aspectFill" bindtap="onImagePreview" data-index="{{index}}"></image>
       </view>
     </view>
-  </view>
+  </scroll-view>
 
   <!-- 底部信息栏 -->
   <view class="bottom-bar">

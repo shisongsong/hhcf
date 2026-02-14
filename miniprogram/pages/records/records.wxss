@@ -225,6 +225,17 @@
   display: block;
 }
 
+.image-count-badge {
+  position: absolute;
+  bottom: 12rpx;
+  right: 12rpx;
+  background: rgba(0, 0, 0, 0.5);
+  color: #fff;
+  padding: 4rpx 12rpx;
+  border-radius: 16rpx;
+  font-size: 22rpx;
+}
+
 .meal-tag {
   position: absolute;
   top: 12rpx;
