@@ -5,8 +5,7 @@ const express = require('express');
 const cors = require('cors');
 const multer = require('multer');
 const qiniu = require('qiniu');
-const low = require('lowdb');
-const FileSync = require('lowdb/adapters/FileSync');
+const mysql = require('mysql2/promise');
 const { v4: uuidv4 } = require('uuid');
 
 const app = express();
@@ -23,10 +22,17 @@ app.use('/api', (req, res, next) => {
   next();
 });
 
-const adapter = new FileSync('db.json');
-const db = low(adapter);
-
-db.defaults({ records: [] }).write();
+// MySQL 连接池
+const pool = mysql.createPool({
+  host: process.env.MYSQL_HOST || 'localhost',
+  port: process.env.MYSQL_PORT || 3306,
+  user: process.env.MYSQL_USER || 'root',
+  password: process.env.MYSQL_PASSWORD || '',
+  database: process.env.MYSQL_DATABASE || 'hhcf',
+  waitForConnections: true,
+  connectionLimit: 10,
+  queueLimit: 0
+});
 
 const qiniuConfig = {
   accessKey: process.env.QINIU_ACCESS_KEY || 'your-access-key',
@@ -108,60 +114,87 @@ app.post('/api/login', async (req, res) => {
   }
 });
 
-app.get('/api/records', (req, res) => {
+app.get('/api/records', async (req, res) => {
   const token = req.headers.authorization?.replace('Bearer ', '');
   const openid = verifyToken(token);
   if (!openid) return res.status(401).json({ error: '未登录' });
 
-  const records = db.get('records').filter({ openid }).orderBy('timestamp', 'desc').value();
-  res.json({ success: true, data: records });
+  try {
+    const [rows] = await pool.execute(
+      'SELECT id, openid, image_url as imageUrl, meal_type as mealType, title, timestamp, created_at as createdAt FROM records WHERE openid = ? ORDER BY timestamp DESC',
+      [openid]
+    );
+    res.json({ success: true, data: rows });
+  } catch (err) {
+    console.error('查询记录失败:', err);
+    res.status(500).json({ error: '查询失败' });
+  }
 });
 
-app.post('/api/records', (req, res) => {
+app.post('/api/records', async (req, res) => {
   const token = req.headers.authorization?.replace('Bearer ', '');
   const openid = verifyToken(token);
   if (!openid) return res.status(401).json({ error: '未登录' });
 
   const { imageUrl, mealType, title, timestamp } = req.body;
-  const record = {
-    id: uuidv4(),
-    openid,
-    imageUrl,
-    mealType,
-    title,
-    timestamp: timestamp || Date.now(),
-    createdAt: new Date().toISOString(),
-  };
+  const id = uuidv4();
+  const now = timestamp || Date.now();
 
-  db.get('records').push(record).write();
-  res.json({ success: true, data: record });
-});
-
-app.get('/api/records/:id', (req, res) => {
-  const token = req.headers.authorization?.replace('Bearer ', '');
-  const openid = verifyToken(token);
-  if (!openid) return res.status(401).json({ error: '未登录' });
-
-  const record = db.get('records').find({ id: req.params.id }).value();
-  if (!record) return res.status(404).json({ error: '记录不存在' });
-
-  if (record.openid !== openid) {
-    return res.status(403).json({ error: '无权限访问' });
+  try {
+    await pool.execute(
+      'INSERT INTO records (id, openid, image_url, meal_type, title, timestamp) VALUES (?, ?, ?, ?, ?, ?)',
+      [id, openid, imageUrl, mealType, title, now]
+    );
+    const record = { id, openid, imageUrl, mealType, title, timestamp: now };
+    res.json({ success: true, data: record });
+  } catch (err) {
+    console.error('创建记录失败:', err);
+    res.status(500).json({ error: '创建失败' });
   }
-
-  res.json({ success: true, data: record });
 });
 
-app.delete('/api/records/:id', (req, res) => {
+app.get('/api/records/:id', async (req, res) => {
   const token = req.headers.authorization?.replace('Bearer ', '');
   const openid = verifyToken(token);
   if (!openid) return res.status(401).json({ error: '未登录' });
 
-  const exists = db.get('records').find({ id: req.params.id, openid }).value();
-  if (!exists) return res.status(404).json({ error: '记录不存在' });
+  try {
+    const [rows] = await pool.execute(
+      'SELECT id, openid, image_url as imageUrl, meal_type as mealType, title, timestamp, created_at as createdAt FROM records WHERE id = ?',
+      [req.params.id]
+    );
+    if (rows.length === 0) return res.status(404).json({ error: '记录不存在' });
 
-  db.get('records').remove({ id: req.params.id, openid }).write();
-  res.json({ success: true });
+    const record = rows[0];
+    if (record.openid !== openid) {
+      return res.status(403).json({ error: '无权限访问' });
+    }
+
+    res.json({ success: true, data: record });
+  } catch (err) {
+    console.error('查询记录失败:', err);
+    res.status(500).json({ error: '查询失败' });
+  }
+});
+
+app.delete('/api/records/:id', async (req, res) => {
+  const token = req.headers.authorization?.replace('Bearer ', '');
+  const openid = verifyToken(token);
+  if (!openid) return res.status(401).json({ error: '未登录' });
+
+  try {
+    const [result] = await pool.execute(
+      'DELETE FROM records WHERE id = ? AND openid = ?',
+      [req.params.id, openid]
+    );
+    if (result.affectedRows === 0) {
+      return res.status(404).json({ error: '记录不存在' });
+    }
+    res.json({ success: true });
+  } catch (err) {
+    console.error('删除记录失败:', err);
+    res.status(500).json({ error: '删除失败' });
+  }
 });
 
 app.post('/api/upload', upload.single('file'), (req, res) => {
