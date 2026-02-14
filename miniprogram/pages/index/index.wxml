@@ -1,136 +1,3 @@
-<view class="container">
-  <!-- 动态背景 -->
-  <view class="dynamic-bg">
-    <view class="bg-gradient" style="background: linear-gradient(180deg, {{theme.bgGradient[0]}} 0%, {{theme.bgGradient[1]}} 60%, {{theme.bgGradient[2]}} 100%);"></view>
-    <!-- 动态装饰元素 -->
-    <view class="decorations">
-      <view 
-        wx:for="{{theme.blobs}}" 
-        wx:key="index"
-        class="blob blob-{{index}}"
-        style="background: {{item}}; animation-delay: {{index * 2}}s;"
-      ></view>
-      <!-- 时间专属图案 -->
-      <view class="time-element element-{{theme.key}}">
-        <text>{{theme.emoji}}</text>
-      </view>
-    </view>
-  </view>
-  
-  <!-- 测试切换按钮 -->
-  <view class="debug-panel">
-    <view class="debug-btn" bindtap="toggleTheme">切换</view>
-    <view class="theme-list">
-      <view 
-        wx:for="{{themeList}}" 
-        wx:key="key"
-        class="theme-item {{theme.key === item.key ? 'active' : ''}}"
-        style="background: {{item.bgGradient[1]}};"
-        bindtap="setTheme"
-        data-key="{{item.key}}"
-      >
-        <text>{{item.emoji}}</text>
-      </view>
-    </view>
-  </view>
-  
-  <!-- 主内容 -->
-  <view class="main-content">
-    <!-- 时间标识 -->
-    <view class="time-badge" style="color: {{theme.textPrimary}};">
-      <text>{{theme.emoji}}</text>
-      <text class="time-name" style="color: {{theme.textSecondary}};">{{theme.name}}</text>
-    </view>
-    
-    <!-- 日期 -->
-    <view class="date-display">
-      <text class="month" style="color: {{theme.textSecondary}};">{{month}}</text>
-      <text class="day" style="-webkit-text-fill-color: {{theme.textPrimary}}; color: {{theme.textPrimary}};">{{day}}</text>
-    </view>
-    
-    <!-- 问候 -->
-    <view class="greeting">
-      <text class="greeting-text" style="color: {{theme.textPrimary}};">{{theme.greeting}}</text>
-    </view>
-    
-    <!-- 打卡按钮 -->
-    <view class="button-wrapper">
-      <view class="bubble-btn" style="--primary: {{theme.primary}};" bindtap="onAddClick">
-        <!-- 主泡泡 -->
-        <view class="bubble-main"></view>
-        <!-- 高光 -->
-        <view class="bubble-shine"></view>
-        <!-- 按钮内容 -->
-        <view class="btn-content">
-          <view class="camera-icon">
-            <view class="camera-body"></view>
-            <view class="camera-lens"></view>
-            <view class="camera-flash"></view>
-          </view>
-          <text class="btn-hint">拍照打卡</text>
-        </view>
-      </view>
-    </view>
-    
-    <!-- 今日打卡状态 -->
-    <view class="meal-status">
-      <view 
-        wx:for="{{todayMeals}}" 
-        wx:key="key"
-        class="meal-icon-item {{item.checked ? 'checked' : ''}}"
-        style="{{item.checked ? '--active-color:' + item.color : ''}}"
-        bindtap="onMealIconTap"
-        data-key="{{item.key}}"
-      >
-        <view class="meal-icon-bg" style="background: {{item.checked ? item.color : 'rgba(255,255,255,0.3)'}};">
-          <text class="meal-icon-emoji">{{item.emoji}}</text>
-        </view>
-        <text class="meal-icon-label" style="color: {{item.checked ? theme.textPrimary : theme.textSecondary}};">{{item.label}}</text>
-      </view>
-    </view>
-  </view>
-  
-  <!-- 底部导航 -->
-  <view class="bottom-nav">
-    <view class="nav-item" style="color: {{theme.textSecondary}};" bindtap="goToRecords">
-      <text class="nav-icon">📋</text>
-      <text class="nav-text" style="color: {{theme.textSecondary}};">记录</text>
-    </view>
-  </view>
-  
-  <!-- 打卡详情弹窗 -->
-  <view class="popup-mask {{showMealPopup ? 'show' : ''}}" bindtap="onClosePopup"></view>
-  <view class="popup-modal {{showMealPopup ? 'show' : ''}}">
-    <view class="popup-content" wx:if="{{popupRecord}}">
-      <view class="popup-image-list">
-        <image 
-          wx:for="{{popupRecord.imageUrl}}" 
-          wx:key="index"
-          class="popup-image" 
-          src="{{item}}" 
-          mode="aspectFill"
-        ></image>
-      </view>
-      <view class="popup-info">
-        <view class="popup-meal-tag" style="background: linear-gradient(135deg, {{popupMealInfo.color}} 0%, {{popupMealInfo.color}}CC 100%);">
-          <text>{{popupMealInfo.emoji}}</text>
-          <text>{{popupMealInfo.label}}</text>
-        </view>
-        <text class="popup-time">{{popupFormattedTime}}</text>
-      </view>
-      <view class="popup-actions">
-        <view class="popup-action-btn" bindtap="onSharePoster">
-          <text class="action-icon">🖼️</text>
-          <text class="action-text">生成海报</text>
-        </view>
-        <view class="popup-action-btn" bindtap="onShareMiniApp">
-          <text class="action-icon">📤</text>
-          <text class="action-text">分享好友</text>
-        </view>
-      </view>
-    </view>
-  </view>
-
   <!-- 拍照弹窗 -->
   <view class="camera-popup {{showCameraPopup ? 'show' : ''}}">
     <view class="camera-header">
@@ -138,41 +5,33 @@
         <text>✕</text>
       </view>
       <text class="camera-title">拍照打卡</text>
-      <view class="camera-placeholder"></view>
+      <view class="camera-save-btn {{cameraPhotos.length > 0 ? 'active' : ''}}" bindtap="onSavePhotos">
+        <text>保存</text>
+      </view>
     </view>
 
     <!-- 调整图片弹窗 -->
     <view class="adjust-popup {{isAdjustingPhoto ? 'show' : ''}}">
-      <view class="adjust-content">
-        <view class="adjust-preview">
+      <view class="adjust-header">
+        <view class="adjust-cancel" bindtap="onCancelAdjust">取消</view>
+        <text class="adjust-title">调整图片</text>
+        <view class="adjust-confirm" bindtap="onConfirmAdjust">完成</view>
+      </view>
+      <view class="adjust-viewport">
+        <view class="adjust-frame">
           <image 
             class="adjust-image" 
             src="{{cameraPhotos[adjustPhotoIndex]}}"
             mode="aspectFill"
-            style="transform: scale({{adjustScale}}) translate({{adjustX}}rpx, {{adjustY}}rpx);"
+            style="transform: scale({{adjustScale}}) translate({{adjustX}}px, {{adjustY}}px);"
+            bindtouchstart="onTouchAdjustStart"
+            bindtouchmove="onTouchAdjustMove"
+            bindtouchend="onTouchAdjustEnd"
           ></image>
-          <view class="adjust-mask-top"></view>
-          <view class="adjust-mask-bottom"></view>
-          <view class="adjust-mask-left"></view>
-          <view class="adjust-mask-right"></view>
+          <view class="adjust-mask"></view>
         </view>
-        <view class="adjust-controls">
-          <view class="adjust-control">
-            <text>缩放: {{adjustScale.toFixed(1)}}x</text>
-            <slider min="50" max="150" value="{{adjustScale * 50}}" bindchange="onAdjustScaleChange" />
-          </view>
-          <view class="adjust-control">
-            <text>水平移动</text>
-            <slider min="0" max="200" value="{{adjustX + 100}}" bindchange="onAdjustXChange" />
-          </view>
-          <view class="adjust-control">
-            <text>垂直移动</text>
-            <slider min="0" max="200" value="{{adjustY + 100}}" bindchange="onAdjustYChange" />
-          </view>
-          <view class="adjust-btns">
-            <view class="adjust-btn cancel" bindtap="onCancelAdjust">取消</view>
-            <view class="adjust-btn confirm" bindtap="onConfirmAdjust">确定</view>
-          </view>
+        <view class="adjust-hint">
+          <text>双指缩放，单指拖动</text>
         </view>
       </view>
     </view>
@@ -192,31 +51,34 @@
       </view>
     </view>
 
-    <!-- 照片预览 -->
+    <!-- 照片预览 - 横向排列 -->
     <view class="photo-thumbnail-list" wx:if="{{cameraPhotos.length > 0}}">
-      <scroll-view scroll-x class="thumbnail-scroll">
+      <scroll-view scroll-x class="thumbnail-scroll" enhanced show-scrollbar="{{false}}">
         <view 
           wx:for="{{cameraPhotos}}" 
           wx:key="index"
           class="thumbnail-item {{currentCameraIndex === index ? 'active' : ''}}"
         >
           <image class="thumbnail-img" src="{{item}}" mode="aspectFill" bindtap="onStartAdjustPhoto" data-index="{{index}}"></image>
-          <view class="thumbnail-delete" bindtap="onDeletePhoto" data-index="{{index}}">✕</view>
+          <view class="thumbnail-delete" catchtap="onDeletePhoto" data-index="{{index}}">✕</view>
         </view>
       </scroll-view>
     </view>
 
     <!-- 底部控制栏 -->
     <view class="camera-controls">
-      <view class="control-btn album" bindtap="onChooseFromAlbum">
-        <text>📷</text>
+      <view class="control-btn" bindtap="onChooseFromAlbum">
+        <view class="control-icon-wrapper">
+          <text class="control-icon">🖼️</text>
+        </view>
+        <text class="control-label">相册</text>
       </view>
-      <view class="control-btn capture" bindtap="onTakePhoto">
-        <view class="capture-btn"></view>
+      <view class="capture-wrapper">
+        <view class="capture-btn" bindtap="onTakePhoto">
+          <view class="capture-inner"></view>
+        </view>
       </view>
-      <view class="control-btn save {{cameraPhotos.length === 0 ? 'disabled' : ''}}" bindtap="onSavePhotos">
-        <text>✓</text>
-      </view>
+      <view class="control-placeholder"></view>
     </view>
   </view>
 

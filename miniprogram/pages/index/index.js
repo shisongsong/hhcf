@@ -114,6 +114,12 @@ Page({
     adjustX: 0,
     adjustY: 0,
     cameraContext: null,
+    touchStartDistance: 0,
+    touchStartScale: 1,
+    touchStartX: 0,
+    touchStartY: 0,
+    touchStartAdjustX: 0,
+    touchStartAdjustY: 0,
   },
 
   onLoad: function () {
@@ -285,25 +291,54 @@ Page({
       adjustScale: adjustData.scale,
       adjustX: adjustData.x,
       adjustY: adjustData.y,
+      touchStartDistance: 0,
+      touchStartX: 0,
+      touchStartY: 0,
     });
   },
 
-  onAdjustScaleChange: function(e) {
-    this.setData({
-      adjustScale: e.detail.value / 50,
-    });
+  onTouchAdjustStart: function(e) {
+    if (e.touches.length === 2) {
+      const dx = e.touches[1].clientX - e.touches[0].clientX;
+      const dy = e.touches[1].clientY - e.touches[0].clientY;
+      const distance = Math.sqrt(dx * dx + dy * dy);
+      this.setData({
+        touchStartDistance: distance,
+        touchStartScale: this.data.adjustScale,
+      });
+    } else if (e.touches.length === 1) {
+      this.setData({
+        touchStartX: e.touches[0].clientX,
+        touchStartY: e.touches[0].clientY,
+        touchStartAdjustX: this.data.adjustX,
+        touchStartAdjustY: this.data.adjustY,
+      });
+    }
   },
 
-  onAdjustXChange: function(e) {
-    this.setData({
-      adjustX: e.detail.value - 100,
-    });
+  onTouchAdjustMove: function(e) {
+    if (e.touches.length === 2) {
+      const dx = e.touches[1].clientX - e.touches[0].clientX;
+      const dy = e.touches[1].clientY - e.touches[0].clientY;
+      const distance = Math.sqrt(dx * dx + dy * dy);
+      const scale = this.data.touchStartScale * (distance / this.data.touchStartDistance);
+      this.setData({
+        adjustScale: Math.max(0.5, Math.min(3, scale)),
+      });
+    } else if (e.touches.length === 1) {
+      const deltaX = e.touches[0].clientX - this.data.touchStartX;
+      const deltaY = e.touches[0].clientY - this.data.touchStartY;
+      const newX = this.data.touchStartAdjustX + deltaX;
+      const newY = this.data.touchStartAdjustY + deltaY;
+      this.setData({
+        adjustX: newX,
+        adjustY: newY,
+      });
+    }
   },
 
-  onAdjustYChange: function(e) {
-    this.setData({
-      adjustY: e.detail.value - 100,
-    });
+  onTouchAdjustEnd: function(e) {
+    // Keep the current values
   },
 
   onConfirmAdjust: function() {
