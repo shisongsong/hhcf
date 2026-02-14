@@ -1,4 +1,14 @@
 <view class="container" wx:if="{{record}}">
+  <!-- 动态背景 -->
+  <view class="dynamic-bg">
+    <view class="bg-gradient"></view>
+    <view class="decorations">
+      <view class="blob blob-1"></view>
+      <view class="blob blob-2"></view>
+      <view class="blob blob-3"></view>
+    </view>
+  </view>
+
   <!-- 全屏图片 -->
   <view class="image-viewer">
     <image
@@ -10,13 +20,7 @@
 
   <!-- 顶部操作栏 -->
   <view class="top-bar">
-    <view class="top-bar-bg"></view>
     <view class="top-actions">
-      <view class="action-btn" bindtap="onBack">
-        <view class="back-icon">
-          <view class="back-arrow"></view>
-        </view>
-      </view>
       <view class="action-btn" bindtap="onMoreTap">
         <view class="more-icon">
           <view class="more-dot"></view>
@@ -29,7 +33,6 @@
 
   <!-- 底部信息栏 -->
   <view class="bottom-bar">
-    <view class="bottom-bar-bg"></view>
     <view class="bottom-content">
       <view class="meal-info">
         <view class="meal-tag" style="background: linear-gradient(135deg, {{mealTypeInfo.color}} 0%, {{mealTypeInfo.color}}CC 100%);">

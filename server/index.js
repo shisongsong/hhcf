@@ -83,7 +83,7 @@ app.post('/api/login', async (req, res) => {
   }
 
   try {
-    const url = `https://api.weixin.qq.com/sns/oauth2/jscode2session?appid=${appId}&secret=${appSecret}&js_code=${code}&grant_type=authorization_code`;
+    const url = `https://api.weixin.qq.com/sns/jscode2session?appid=${appId}&secret=${appSecret}&js_code=${code}&grant_type=authorization_code`;
     console.log('请求微信登录 API:', url.replace(appSecret, '***'));
     
     const response = await fetch(url, {
