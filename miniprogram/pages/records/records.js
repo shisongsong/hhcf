@@ -124,7 +124,7 @@ Page({
     query.selectAll('.timeline-item').boundingClientRect((rects) => {
       if (rects) {
         const positions = rects.map((rect) => ({
-          id: rect.dataset?.id,
+          id: rect.dataset && rect.dataset.id,
           top: rect.top,
         }));
         this.setData({ itemPositions: positions });

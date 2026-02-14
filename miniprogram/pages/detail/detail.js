@@ -146,7 +146,7 @@ Page({
       method: 'GET',
       data: { scene: id },
     }).then((res) => {
-      if (res.data?.qrcode) {
+      if (res.data && res.data.qrcode) {
         this.drawPoster(record.imageUrl, res.data.qrcode, mealTypeInfo, formattedTime, id);
       } else {
         throw new Error('生成小程序码失败');
@@ -308,7 +308,7 @@ Page({
   onShareAppMessage: function () {
     const { record } = this.data;
     return {
-      title: record?.title || '好好吃饭',
+      title: (record && record.title) || '好好吃饭',
       path: `/pages/detail/detail?id=${this.data.id}`,
     };
   },
@@ -316,7 +316,7 @@ Page({
   onShareTimeline: function () {
     const { record } = this.data;
     return {
-      title: record?.title || '好好吃饭',
+      title: (record && record.title) || '好好吃饭',
       query: `id=${this.data.id}`,
     };
   },
