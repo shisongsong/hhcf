@@ -42,4 +42,11 @@ jobs:
             --pkp ./private.key \
             --appid ${{ secrets.APPID }} \
             --uv "CI-${{ github.run_number }}" \
-            -r 1
+            --qr-destination ./qrcode.jpg \
+            --qr-format image
+          
+      - name: Upload QR Code
+        uses: actions/upload-artifact@v4
+        with:
+          name: experience-qrcode
+          path: ./qrcode.jpg
