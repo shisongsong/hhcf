@@ -72,7 +72,7 @@
   top: 120rpx;
   left: 40rpx;
   right: 40rpx;
-  bottom: 200rpx;
+  height: calc(100vw - 80rpx);
   z-index: 1;
 }
 
@@ -107,6 +107,7 @@
   right: 0;
   z-index: 100;
   padding-bottom: calc(env(safe-area-inset-bottom) + 20rpx);
+  margin-top: 40rpx;
 }
 
 .bottom-content {
