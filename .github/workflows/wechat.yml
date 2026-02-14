@@ -23,7 +23,7 @@ jobs:
           
       - name: Setup Private Key
         run: |
-          echo "${{ secrets.PRIVATE_KEY }}" > ./private.key
+          echo "${{ secrets.PRIVATE_KEY }}" | base64 -d > ./private.key
           chmod 400 ./private.key
           
       - name: Preview
