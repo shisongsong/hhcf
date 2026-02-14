@@ -609,19 +609,29 @@
 /* 关闭按钮 */
 .camera-close-btn {
   position: absolute;
-  top: calc(24rpx + env(safe-area-inset-top));
+  top: calc(60rpx + env(safe-area-inset-top));
   left: 24rpx;
   width: 80rpx;
   height: 80rpx;
   display: flex;
   align-items: center;
   justify-content: center;
-  background: rgba(255,255,255,0.15);
+  background: rgba(0,0,0,0.4);
   border-radius: 50%;
   color: #fff;
   font-size: 36rpx;
   z-index: 15;
   transition: all 0.2s ease;
+}
+
+.camera-viewfinder {
+  flex: 1;
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-top: 160rpx;
+  margin-bottom: 280rpx;
 }
 
 .camera-close-btn:active {
@@ -731,19 +741,18 @@
 
 .thumbnail-delete {
   position: absolute;
-  top: 6rpx;
-  right: 6rpx;
+  top: 4rpx;
+  right: 4rpx;
   width: 36rpx;
   height: 36rpx;
-  background: rgba(0, 0, 0, 0.6);
+  background: rgba(0, 0, 0, 0.7);
   color: #fff;
   border-radius: 50%;
   font-size: 22rpx;
   display: flex;
   align-items: center;
   justify-content: center;
-  opacity: 0;
-  transition: opacity 0.2s ease;
+  opacity: 1;
 }
 
 .thumbnail-item:active .thumbnail-delete {

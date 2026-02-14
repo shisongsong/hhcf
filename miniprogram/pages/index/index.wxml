@@ -165,13 +165,14 @@
     </view>
 
     <!-- 取景框 -->
-    <view class="camera-viewfinder">
+    <view class="camera-viewfinder" wx:if="{{showCameraPopup}}">
       <camera 
         device-position="back" 
         flash="off" 
         class="camera-element"
+        wx:if="{{!isAdjustingPhoto}}"
       ></camera>
-      <view class="viewfinder-frame">
+      <view class="viewfinder-frame" wx:if="{{!isAdjustingPhoto}}">
         <view class="frame-corner tl"></view>
         <view class="frame-corner tr"></view>
         <view class="frame-corner bl"></view>
@@ -213,8 +214,4 @@
         <text class="control-label">保存</text>
       </view>
     </view>
-  </view>
-
-  <!-- 隐藏的 canvas 用于裁剪 -->
-  <canvas canvas-id="cropCanvas" style="width: 600px; height: 600px; position: absolute; left: -9999px;"></canvas>
 </view>

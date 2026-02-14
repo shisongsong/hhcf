@@ -369,7 +369,7 @@ Page({
     wx.showLoading({ title: '处理中...' });
 
     try {
-      const croppedPhotos = await this.cropPhotos(cameraPhotos, photoAdjustData);
+      const croppedPhotos = await this.cropPhotos(cameraPhotos);
       
       const tempFilePaths = croppedPhotos;
       const timestamp = Date.now();
@@ -388,43 +388,49 @@ Page({
     }
   },
 
-  cropPhotos: function(photos, adjustData) {
-    return new Promise((resolve) => {
-      const ctx = wx.createCanvasContext('cropCanvas');
-      const size = 600;
+  cropPhotos: function(photos) {
+    return new Promise(async (resolve) => {
       const croppedPaths = [];
-      let processed = 0;
+      
+      for (let i = 0; i < photos.length; i++) {
+        const photo = photos[i];
+        
+        try {
+          const cropped = await this.cropSinglePhoto(photo);
+          croppedPaths.push(cropped);
+        } catch (err) {
+          croppedPaths.push(photo);
+        }
+        
+        if (i === photos.length - 1) {
+          resolve(croppedPaths);
+        }
+      }
+    });
+  },
 
-      photos.forEach((photo, index) => {
-        const adjust = adjustData[index] || { scale: 1, x: 0, y: 0 };
-        
-        ctx.drawImage(photo, 0, 0, size, size);
-        
-        ctx.draw(false, () => {
-          wx.canvasToTempFilePath({
-            canvas: 'cropCanvas',
-            x: (size - size / adjust.scale) / 2 - adjust.x,
-            y: (size - size / adjust.scale) / 2 - adjust.y,
-            width: size / adjust.scale,
-            height: size / adjust.scale,
-            destWidth: size,
-            destHeight: size,
+  cropSinglePhoto: function(photoPath) {
+    return new Promise((resolve, reject) => {
+      wx.getImageInfo({
+        src: photoPath,
+        success: (info) => {
+          const size = Math.min(info.width, info.height);
+          const x = (info.width - size) / 2;
+          const y = (info.height - size) / 2;
+          
+          wx.cropImage({
+            src: photoPath,
             success: (res) => {
-              croppedPaths[index] = res.tempFilePath;
-              processed++;
-              if (processed === photos.length) {
-                resolve(croppedPaths);
-              }
+              resolve(res.tempFilePath);
             },
             fail: () => {
-              croppedPaths[index] = photo;
-              processed++;
-              if (processed === photos.length) {
-                resolve(croppedPaths);
-              }
-            },
+              reject(new Error('crop failed'));
+            }
           });
-        });
+        },
+        fail: () => {
+          reject(new Error('get image info failed'));
+        }
       });
     });
   },
