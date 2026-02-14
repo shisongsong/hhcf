@@ -205,12 +205,36 @@
 .time-info {
   display: flex;
   align-items: center;
+  flex: 1;
 }
 
 .time-text {
   font-size: 28rpx;
   color: #8B7355;
   font-weight: 500;
+}
+
+.menu-btn {
+  width: 72rpx;
+  height: 72rpx;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(255, 255, 255, 0.8);
+  border-radius: 50%;
+  box-shadow: 0 4rpx 20rpx rgba(0, 0, 0, 0.08);
+  transition: all 0.2s ease;
+}
+
+.menu-btn:active {
+  transform: scale(0.9);
+  background: rgba(255, 255, 255, 0.95);
+}
+
+.menu-icon {
+  font-size: 28rpx;
+  color: #8B7355;
+  letter-spacing: 4rpx;
 }
 
 /* 隐藏画布 */

@@ -391,57 +391,12 @@ Page({
   cropPhotos: function(photos) {
     return new Promise(async (resolve) => {
       const croppedPaths = [];
-      const ctx = wx.createCanvasContext('photoCropper');
-      const cropSize = 600;
       
       for (let i = 0; i < photos.length; i++) {
-        const photo = photos[i];
-        
-        try {
-          const cropped = await this.cropSingleImage(ctx, photo, cropSize);
-          croppedPaths.push(cropped);
-        } catch (err) {
-          console.error('Crop failed for photo', i, err);
-          croppedPaths.push(photo);
-        }
-        
-        if (i === photos.length - 1) {
-          ctx.draw();
-          setTimeout(() => {
-            resolve(croppedPaths);
-          }, 500);
-        }
+        croppedPaths.push(photos[i]);
       }
-    });
-  },
-
-  cropSingleImage: function(ctx, photoPath, size) {
-    return new Promise((resolve, reject) => {
-      wx.getImageInfo({
-        src: photoPath,
-        success: (info) => {
-          const minSide = Math.min(info.width, info.height);
-          const sx = (info.width - minSide) / 2;
-          const sy = (info.height - minSide) / 2;
-          
-          ctx.drawImage(photoPath, sx, sy, minSide, minSide, 0, 0, size, size);
-          
-          setTimeout(() => {
-            wx.canvasToTempFilePath({
-              canvasId: 'photoCropper',
-              success: (res) => {
-                resolve(res.tempFilePath);
-              },
-              fail: (err) => {
-                reject(err);
-              }
-            });
-          }, 100);
-        },
-        fail: (err) => {
-          reject(err);
-        }
-      });
+      
+      resolve(croppedPaths);
     });
   },
 

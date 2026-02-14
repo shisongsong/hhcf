@@ -30,6 +30,9 @@
       <view class="time-info">
         <text class="time-text">{{formattedTime.full}}</text>
       </view>
+      <view class="menu-btn" bindtap="onMoreTap">
+        <text class="menu-icon">•••</text>
+      </view>
     </view>
   </view>
 

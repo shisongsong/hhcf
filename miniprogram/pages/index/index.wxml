@@ -135,11 +135,6 @@
   <view class="camera-popup {{showCameraPopup ? 'show' : ''}}">
     <!-- 调整图片弹窗 -->
     <view class="adjust-popup {{isAdjustingPhoto ? 'show' : ''}}">
-      <view class="adjust-header">
-        <view class="adjust-cancel" bindtap="onCancelAdjust">取消</view>
-        <text class="adjust-title">调整图片</text>
-        <view class="adjust-confirm" bindtap="onConfirmAdjust">完成</view>
-      </view>
       <view class="adjust-viewport">
         <view class="adjust-frame">
           <image 
@@ -156,6 +151,10 @@
         <view class="adjust-hint">
           <text>双指缩放，单指拖动</text>
         </view>
+      </view>
+      <view class="adjust-controls">
+        <view class="adjust-btn cancel" bindtap="onCancelAdjust">取消</view>
+        <view class="adjust-btn confirm" bindtap="onConfirmAdjust">完成</view>
       </view>
     </view>
 
