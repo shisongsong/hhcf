@@ -711,7 +711,7 @@ Page({
     app.request({
       url: '/api/qrcode',
       method: 'GET',
-      data: { scene: record.id },
+      data: { scene: record.shareId || record.id },
     }).then((res) => {
       if (res.data && res.data.qrcode) {
         this.drawPoster(record.imageUrl, res.data.qrcode, mealTypeInfo, formattedTime, record.id);
@@ -900,10 +900,13 @@ Page({
 
   onShareAppMessage: function (res) {
     if (res && res.from === 'button' && res.target && res.target.dataset) {
-      const { id, title } = res.target.dataset;
+      const { id, shareid, title } = res.target.dataset;
+      const sharePath = shareid
+        ? `/pages/detail/detail?shareId=${shareid}`
+        : `/pages/detail/detail?id=${id}`;
       return {
         title: title || '好好吃饭',
-        path: `/pages/detail/detail?id=${id}`,
+        path: sharePath,
       };
     }
     return {
@@ -914,9 +917,11 @@ Page({
 
   onShareTimeline: function (res) {
     if (res && res.target && res.target.dataset && res.target.dataset.id) {
+      const shareid = res.target.dataset.shareid;
+      const id = res.target.dataset.id;
       return {
         title: res.target.dataset.title || '好好吃饭',
-        query: `id=${res.target.dataset.id}`,
+        query: shareid ? `shareId=${shareid}` : `id=${id}`,
       };
     }
     return {

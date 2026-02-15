@@ -119,6 +119,7 @@
           class="popup-action-btn share-btn" 
           open-type="share"
           data-id="{{popupRecord.id}}"
+          data-shareid="{{popupRecord.shareId}}"
           data-title="{{popupRecord.title}}"
         >
           <text class="action-icon">📤</text>

@@ -62,6 +62,10 @@ function verifyToken(token) {
   }
 }
 
+function generateShareId() {
+  return uuidv4().replace(/-/g, '');
+}
+
 app.post('/api/login', async (req, res) => {
   const { code } = req.body;
 
@@ -121,14 +125,21 @@ app.get('/api/records', async (req, res) => {
 
   try {
     const [rows] = await pool.execute(
-      'SELECT id, openid, image_url, meal_type as mealType, title, timestamp, created_at as createdAt FROM records WHERE openid = ? ORDER BY timestamp DESC',
+      'SELECT id, share_id as shareId, openid, image_url, meal_type as mealType, title, timestamp, created_at as createdAt FROM records WHERE openid = ? ORDER BY timestamp DESC',
       [openid]
     );
-    // 转换 image_url 字符串到数组
-    const records = rows.map(row => ({
-      ...row,
-      imageUrl: row.image_url ? JSON.parse(row.image_url) : []
-    }));
+    const records = [];
+    for (const row of rows) {
+      const record = {
+        ...row,
+        imageUrl: row.image_url ? JSON.parse(row.image_url) : []
+      };
+      if (!record.shareId) {
+        record.shareId = generateShareId();
+        await pool.execute('UPDATE records SET share_id = ? WHERE id = ?', [record.shareId, record.id]);
+      }
+      records.push(record);
+    }
     res.json({ success: true, data: records });
   } catch (err) {
     console.error('查询记录失败:', err);
@@ -143,6 +154,7 @@ app.post('/api/records', async (req, res) => {
 
   const { imageUrls, mealType, title, timestamp } = req.body;
   const id = uuidv4();
+  const shareId = generateShareId();
   const now = timestamp || Date.now();
   
   // 存储为 JSON 数组
@@ -150,10 +162,10 @@ app.post('/api/records', async (req, res) => {
 
   try {
     await pool.execute(
-      'INSERT INTO records (id, openid, image_url, meal_type, title, timestamp) VALUES (?, ?, ?, ?, ?, ?)',
-      [id, openid, imageUrlJson, mealType, title, now]
+      'INSERT INTO records (id, openid, image_url, meal_type, title, timestamp, share_id) VALUES (?, ?, ?, ?, ?, ?, ?)',
+      [id, openid, imageUrlJson, mealType, title, now, shareId]
     );
-    const record = { id, openid, imageUrls, mealType, title, timestamp: now };
+    const record = { id, shareId, openid, imageUrls, mealType, title, timestamp: now };
     res.json({ success: true, data: record });
   } catch (err) {
     console.error('创建记录失败:', err);
@@ -168,7 +180,7 @@ app.get('/api/records/:id', async (req, res) => {
 
   try {
     const [rows] = await pool.execute(
-      'SELECT id, openid, image_url, meal_type as mealType, title, timestamp, created_at as createdAt FROM records WHERE id = ?',
+      'SELECT id, share_id as shareId, openid, image_url, meal_type as mealType, title, timestamp, created_at as createdAt FROM records WHERE id = ?',
       [req.params.id]
     );
     if (rows.length === 0) return res.status(404).json({ error: '记录不存在' });
@@ -182,9 +194,42 @@ app.get('/api/records/:id', async (req, res) => {
       return res.status(403).json({ error: '无权限访问' });
     }
 
+    if (!record.shareId) {
+      record.shareId = generateShareId();
+      await pool.execute('UPDATE records SET share_id = ? WHERE id = ?', [record.shareId, record.id]);
+    }
+
     res.json({ success: true, data: record });
   } catch (err) {
     console.error('查询记录失败:', err);
+    res.status(500).json({ error: '查询失败' });
+  }
+});
+
+app.get('/api/share/:shareId', async (req, res) => {
+  const { shareId } = req.params;
+  if (!shareId) return res.status(400).json({ error: '缺少参数' });
+
+  try {
+    const [rows] = await pool.execute(
+      'SELECT id, share_id as shareId, image_url, meal_type as mealType, title, timestamp, created_at as createdAt FROM records WHERE share_id = ? OR id = ? LIMIT 1',
+      [shareId, shareId]
+    );
+    if (rows.length === 0) return res.status(404).json({ error: '记录不存在' });
+
+    const record = {
+      ...rows[0],
+      imageUrl: rows[0].image_url ? JSON.parse(rows[0].image_url) : []
+    };
+
+    if (!record.shareId) {
+      record.shareId = generateShareId();
+      await pool.execute('UPDATE records SET share_id = ? WHERE id = ?', [record.shareId, record.id]);
+    }
+
+    res.json({ success: true, data: record });
+  } catch (err) {
+    console.error('查询分享记录失败:', err);
     res.status(500).json({ error: '查询失败' });
   }
 });
@@ -261,7 +306,7 @@ app.get('/api/qrcode', async (req, res) => {
   if (!scene) return res.status(400).json({ error: '缺少参数' });
 
   try {
-    const qrcodeUrl = `https://your-miniprogram.com/pages/detail/detail?id=${scene}`;
+    const qrcodeUrl = `https://your-miniprogram.com/pages/detail/detail?shareId=${scene}`;
     const QRCode = require('qrcode');
     const qrcodeDataUrl = await QRCode.toDataURL(qrcodeUrl, { width: 280 });
     res.json({ success: true, data: { qrcode: qrcodeDataUrl } });
@@ -270,6 +315,25 @@ app.get('/api/qrcode', async (req, res) => {
   }
 });
 
-app.listen(PORT, '0.0.0.0', () => {
-  console.log(`服务器运行在 http://0.0.0.0:${PORT}`);
-});
+async function ensureShareIdColumn() {
+  try {
+    const [columns] = await pool.execute(
+      "SELECT COLUMN_NAME FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'records' AND COLUMN_NAME = 'share_id'"
+    );
+    if (columns.length === 0) {
+      await pool.execute("ALTER TABLE records ADD COLUMN share_id VARCHAR(64) NULL");
+      await pool.execute("CREATE INDEX idx_records_share_id ON records (share_id)");
+    }
+  } catch (err) {
+    console.error('初始化 share_id 字段失败:', err);
+  }
+}
+
+async function startServer() {
+  await ensureShareIdColumn();
+  app.listen(PORT, '0.0.0.0', () => {
+    console.log(`服务器运行在 http://0.0.0.0:${PORT}`);
+  });
+}
+
+startServer();

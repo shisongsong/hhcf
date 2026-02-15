@@ -5,8 +5,10 @@ const { getMealTypeInfo } = require('../../utils/meal');
 Page({
   data: {
     id: '',
+    shareId: '',
     record: null,
     isOwner: false,
+    isSharedView: false,
     scale: 1,
     currentPosterStyle: 'simple',
     showActionSheet: false,
@@ -14,9 +16,12 @@ Page({
   },
 
   onLoad: function (options) {
-    const { id } = options;
-    if (id) {
-      this.setData({ id });
+    const { id, shareId } = options;
+    if (shareId) {
+      this.setData({ shareId, isSharedView: true });
+      this.loadSharedRecord(shareId);
+    } else if (id) {
+      this.setData({ id, isSharedView: false });
       this.loadRecord(id);
     } else {
       wx.showToast({ title: '参数错误', icon: 'none' });
@@ -93,6 +98,51 @@ Page({
     }
   },
 
+  loadSharedRecord: async function (shareId) {
+    wx.showLoading({ title: '加载中...' });
+
+    try {
+      const res = await app.request({
+        url: `/api/share/${shareId}`,
+        method: 'GET',
+      });
+
+      if (!res.data) {
+        throw new Error('记录不存在');
+      }
+
+      const record = res.data;
+      const mealTypeInfo = getMealTypeInfo(record.mealType);
+
+      this.setData({
+        id: record.id,
+        shareId: record.shareId || shareId,
+        record,
+        isOwner: false,
+        mealTypeInfo,
+        formattedTime: formatTime(new Date(record.timestamp)),
+      });
+
+      wx.setNavigationBarTitle({
+        title: record.title || '好好吃饭',
+      });
+
+      wx.hideLoading();
+    } catch (err) {
+      console.error('加载分享记录失败', err);
+      wx.hideLoading();
+      const errorMsg = err.message || '';
+      if (errorMsg.includes('记录不存在')) {
+        wx.showToast({ title: '记录不存在或已删除', icon: 'none' });
+      } else {
+        wx.showToast({ title: '加载失败', icon: 'none' });
+      }
+      setTimeout(() => {
+        wx.switchTab({ url: '/pages/index/index' });
+      }, 1500);
+    }
+  },
+
   onDeleteTap: function () {
     if (!this.data.isOwner) {
       wx.showToast({ title: '只能删除自己的记录', icon: 'none' });
@@ -161,12 +211,12 @@ Page({
   generatePoster: function () {
     wx.showLoading({ title: '生成中...' });
 
-    const { record, id, mealTypeInfo, formattedTime } = this.data;
+    const { record, id, shareId, mealTypeInfo, formattedTime } = this.data;
 
     app.request({
       url: '/api/qrcode',
       method: 'GET',
-      data: { scene: id },
+      data: { scene: shareId || id },
     }).then((res) => {
       if (res.data && res.data.qrcode) {
         this.drawPoster(record.imageUrl, res.data.qrcode, mealTypeInfo, formattedTime, id);
@@ -329,17 +379,22 @@ Page({
 
   onShareAppMessage: function () {
     const { record } = this.data;
+    const shareParam = this.data.shareId || (record && record.shareId);
+    const path = shareParam
+      ? `/pages/detail/detail?shareId=${shareParam}`
+      : `/pages/detail/detail?id=${this.data.id}`;
     return {
       title: (record && record.title) || '好好吃饭',
-      path: `/pages/detail/detail?id=${this.data.id}`,
+      path,
     };
   },
 
   onShareTimeline: function () {
     const { record } = this.data;
+    const shareParam = this.data.shareId || (record && record.shareId);
     return {
       title: (record && record.title) || '好好吃饭',
-      query: `id=${this.data.id}`,
+      query: shareParam ? `shareId=${shareParam}` : `id=${this.data.id}`,
     };
   },
 });
