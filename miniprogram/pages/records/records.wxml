@@ -1,74 +1,103 @@
-<view class="container">
-  <!-- 页面头部 -->
+<view class="container" style="background: linear-gradient(180deg, {{theme.bgGradient[0]}} 0%, {{theme.bgGradient[1]}} 55%, {{theme.bgGradient[2]}} 100%);">
   <view class="page-header">
-    <text class="page-title">记录</text>
-    <view class="record-count" wx:if="{{records.length > 0}}">{{records.length}} 条</view>
+    <text class="page-title" style="color: {{theme.textPrimary}};">记录</text>
+    <view class="record-count" wx:if="{{records.length > 0}}" style="color: {{theme.textSecondary}};">{{records.length}} 条</view>
   </view>
 
-  <!-- 时间轴列表 -->
-  <scroll-view 
-    class="timeline" 
-    scroll-y 
-    enhanced 
-    show-scrollbar="{{false}}"
-  >
-    <!-- 分组的时间轴 -->
-    <view class="timeline-list" wx:if="{{records.length > 0}}">
-      <block wx:for="{{groupKeys}}" wx:key="index">
-        <!-- 日期分组标题 -->
-        <view class="date-group-title">
-          <text>{{item}}</text>
-        </view>
-        
-        <!-- 该日期下的所有记录 -->
-        <view 
-          wx:for="{{groupedRecords[item]}}"
-          wx:for-item="record"
-          wx:key="id"
-          class="timeline-item"
-          style="--delay: {{index * 0.05}}s;"
-        >
-          <!-- 左侧时间点 -->
-          <view class="timeline-left">
-            <view class="time-dot" style="background: {{record.mealInfo.color}};">
-              <view class="dot-inner" style="background: {{record.mealInfo.color}};"></view>
-            </view>
-            <view class="time-line" style="background: {{record.mealInfo.color}}20;"></view>
+  <view class="view-switch">
+    <view class="mode-btn {{viewMode === 'day' ? 'active' : ''}}" data-mode="day" bindtap="onModeChange" style="{{viewMode === 'day' ? 'background:' + theme.accent + ';color:#fff;' : ''}}">日视图</view>
+    <view class="mode-btn {{viewMode === 'week' ? 'active' : ''}}" data-mode="week" bindtap="onModeChange" style="{{viewMode === 'week' ? 'background:' + theme.accent + ';color:#fff;' : ''}}">周视图</view>
+    <view class="mode-btn {{viewMode === 'month' ? 'active' : ''}}" data-mode="month" bindtap="onModeChange" style="{{viewMode === 'month' ? 'background:' + theme.accent + ';color:#fff;' : ''}}">月视图</view>
+  </view>
+
+  <scroll-view class="timeline" scroll-y enhanced show-scrollbar="{{false}}" bindscroll="onScroll">
+    <view wx:if="{{records.length > 0}}">
+      <view class="timeline-list" wx:if="{{viewMode === 'day'}}">
+        <block wx:for="{{groupKeys}}" wx:key="index">
+          <view class="date-group-title" style="color: {{theme.textSecondary}};">
+            <text>{{item}}</text>
           </view>
-          
-          <!-- 右侧内容 -->
-          <view 
-            class="timeline-content"
-            data-id="{{record.id}}"
-            bindtap="onRecordTap"
-          >
-            <view class="content-header">
-              <text class="meal-label" style="color: {{record.mealInfo.color}};">{{record.mealInfo.emoji}} {{record.mealInfo.label}}</text>
-              <text class="record-time">{{record.formattedTime}}</text>
+          <view wx:for="{{groupedRecords[item]}}" wx:for-item="record" wx:key="id" class="timeline-item" style="--delay: {{index * 0.05}}s;" data-id="{{record.id}}">
+            <view class="timeline-left">
+              <view class="time-dot" style="background: {{record.mealInfo.color}};">
+                <view class="dot-inner" style="background: {{record.mealInfo.color}};"></view>
+              </view>
+              <view class="time-line" style="background: {{record.mealInfo.color}}20;"></view>
             </view>
-            
-            <!-- 多图九宫格 -->
-            <view class="image-grid">
-              <view 
-                wx:for="{{record.imageUrl}}" 
-                wx:for-item="img" 
-                wx:for-index="imgIndex"
-                wx:key="imgIndex"
-                class="grid-image-item"
-              >
-                <image class="grid-img" src="{{img}}" mode="aspectFill"></image>
+            <view class="timeline-content" data-id="{{record.id}}" bindtap="onRecordTap">
+              <view class="content-header">
+                <text class="meal-label" style="color: {{record.mealInfo.color}};">{{record.mealInfo.emoji}} {{record.mealInfo.label}}</text>
+                <text class="record-time">{{record.formattedTime}}</text>
+              </view>
+              <view class="image-grid">
+                <view wx:for="{{record.imageUrl}}" wx:for-item="img" wx:for-index="imgIndex" wx:key="imgIndex" class="grid-image-item">
+                  <image class="grid-img" src="{{img}}" mode="aspectFill"></image>
+                </view>
+              </view>
+              <view class="content-footer">
+                <text class="record-title">{{record.title}}</text>
               </view>
             </view>
-            
-            <view class="content-footer">
-              <text class="record-title">{{record.title}}</text>
+          </view>
+        </block>
+      </view>
+
+      <view class="week-view" wx:elif="{{viewMode === 'week'}}">
+        <view class="period-nav">
+          <view class="period-btn" bindtap="onPrevPeriod">上周</view>
+          <view class="period-center">
+            <text class="range-title">{{weekLabel}}</text>
+            <view class="period-reset" wx:if="{{showWeekReset}}" bindtap="onBackCurrentPeriod">回到本周</view>
+          </view>
+          <view class="period-btn" bindtap="onNextPeriod">下周</view>
+        </view>
+        <view class="week-day-list">
+          <view wx:for="{{weekViewDays}}" wx:for-item="day" wx:key="key" class="week-day-card {{day.isToday ? 'today' : ''}}">
+            <view class="week-day-header">
+              <text class="week-day-label">{{day.weekLabel}}</text>
+              <text class="week-day-num">{{day.dateNum}}</text>
+            </view>
+            <view class="meal-grid small">
+              <view wx:for="{{day.meals}}" wx:for-item="meal" wx:key="key" class="meal-icon-item {{meal.checked ? 'checked' : 'unchecked'}}" style="{{meal.checked ? '--active-color:' + meal.color : ''}}" data-id="{{meal.recordId}}" bindtap="onDayMealTap">
+                <view class="meal-icon-bg" style="background: {{meal.checked ? meal.color : 'rgba(255,255,255,0.55)'}};">
+                  <text class="meal-icon-emoji">{{meal.emoji}}</text>
+                </view>
+                <text class="meal-icon-label">{{meal.label}}</text>
+              </view>
             </view>
           </view>
         </view>
-      </block>
+      </view>
+
+      <view class="month-view {{monthSizeClass}}" wx:else>
+        <view class="period-nav">
+          <view class="period-btn" bindtap="onPrevPeriod">上月</view>
+          <view class="period-center">
+            <text class="range-title">{{monthLabel}}</text>
+            <view class="period-reset" wx:if="{{showMonthReset}}" bindtap="onBackCurrentPeriod">回到本月</view>
+          </view>
+          <view class="period-btn" bindtap="onNextPeriod">下月</view>
+        </view>
+        <view class="week-header">
+          <text wx:for="{{weekdaysShort}}" wx:key="index">{{item}}</text>
+        </view>
+        <view class="month-grid">
+          <view wx:for="{{monthViewDays}}" wx:for-item="day" wx:key="key" class="month-cell {{day.isPlaceholder ? 'placeholder' : ''}} {{day.isToday ? 'today' : ''}}">
+            <block wx:if="{{!day.isPlaceholder}}">
+              <text class="month-day-num">{{day.dateNum}}</text>
+              <view class="meal-grid tiny">
+                <view wx:for="{{day.meals}}" wx:for-item="meal" wx:key="key" class="meal-icon-item tiny {{meal.checked ? 'checked' : 'unchecked'}}" style="{{meal.checked ? '--active-color:' + meal.color : ''}}" data-id="{{meal.recordId}}" bindtap="onDayMealTap">
+                  <view class="meal-icon-bg" style="background: {{meal.checked ? meal.color : 'rgba(255,255,255,0.65)'}};">
+                    <text class="meal-icon-emoji">{{meal.emoji}}</text>
+                  </view>
+                </view>
+              </view>
+            </block>
+          </view>
+        </view>
+      </view>
     </view>
 
-    <!-- 空状态 -->
     <view class="empty-state" wx:else>
       <view class="empty-emoji">🍽️</view>
       <text class="empty-text">还没有记录哦</text>
