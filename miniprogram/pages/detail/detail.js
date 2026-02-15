@@ -193,7 +193,7 @@ Page({
       ctx.scale(dpr, dpr);
 
       wx.getImageInfo({
-        src: imageUrl,
+        src: Array.isArray(imageUrl) ? imageUrl[0] : imageUrl,
         success: (imgRes) => {
           const img = canvas.createImage();
           img.src = imgRes.path;
@@ -256,7 +256,7 @@ Page({
 
     ctx.drawImage(img, 20, 60, 280, 280);
 
-    const dateText = formattedTime.month + '.' + formattedTime.day + ' ' + formattedTime.hour + ':' + formattedTime.minute;
+    const dateText = formattedTime.full || formattedTime.displayDate || formattedTime.date;
     ctx.fillStyle = '#333333';
     ctx.font = 'bold 16px sans-serif';
     ctx.fillText(dateText, 20, 40);

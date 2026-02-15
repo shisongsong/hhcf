@@ -90,26 +90,18 @@
     </view>
   </view>
   
-  <!-- 底部导航 -->
-  <view class="bottom-nav">
-    <view class="nav-item" style="color: {{theme.textSecondary}};" bindtap="goToRecords">
-      <text class="nav-icon">📋</text>
-      <text class="nav-text" style="color: {{theme.textSecondary}};">记录</text>
-    </view>
-  </view>
-  
   <!-- 打卡详情弹窗 -->
   <view class="popup-mask {{showMealPopup ? 'show' : ''}}" bindtap="onClosePopup"></view>
   <view class="popup-modal {{showMealPopup ? 'show' : ''}}">
     <view class="popup-content" wx:if="{{popupRecord}}">
       <view class="popup-image-list">
-        <image 
-          wx:for="{{popupRecord.imageUrl}}" 
-          wx:key="index"
-          class="popup-image" 
-          src="{{item}}" 
-          mode="aspectFill"
-        ></image>
+        <view wx:for="{{popupRecord.imageUrl}}" wx:key="index" class="popup-image-wrapper">
+          <image 
+            class="popup-image" 
+            src="{{item}}" 
+            mode="aspectFill"
+          ></image>
+        </view>
       </view>
       <view class="popup-info">
         <view class="popup-meal-tag" style="background: linear-gradient(135deg, {{popupMealInfo.color}} 0%, {{popupMealInfo.color}}CC 100%);">
@@ -123,10 +115,15 @@
           <text class="action-icon">🖼️</text>
           <text class="action-text">生成海报</text>
         </view>
-        <view class="popup-action-btn" bindtap="onShareMiniApp">
+        <button 
+          class="popup-action-btn share-btn" 
+          open-type="share"
+          data-id="{{popupRecord.id}}"
+          data-title="{{popupRecord.title}}"
+        >
           <text class="action-icon">📤</text>
           <text class="action-text">分享好友</text>
-        </view>
+        </button>
       </view>
     </view>
   </view>
@@ -147,6 +144,10 @@
             bindtouchend="onTouchAdjustEnd"
           ></image>
           <view class="adjust-mask"></view>
+          <view class="adjust-corner tl"></view>
+          <view class="adjust-corner tr"></view>
+          <view class="adjust-corner bl"></view>
+          <view class="adjust-corner br"></view>
         </view>
         <view class="adjust-hint">
           <text>双指缩放，单指拖动</text>
@@ -179,42 +180,95 @@
       </view>
     </view>
 
-    <!-- 照片预览 - 横向排列 -->
-    <view class="photo-thumbnail-list" wx:if="{{cameraPhotos.length > 0}}">
-      <scroll-view scroll-x class="thumbnail-scroll" enhanced show-scrollbar="{{false}}">
-        <view 
-          wx:for="{{cameraPhotos}}" 
-          wx:key="index"
-          class="thumbnail-item {{currentCameraIndex === index ? 'active' : ''}}"
-        >
-          <image class="thumbnail-img" src="{{item}}" mode="aspectFill" bindtap="onStartAdjustPhoto" data-index="{{index}}"></image>
-          <view class="thumbnail-delete" catchtap="onDeletePhoto" data-index="{{index}}">✕</view>
+    <!-- 底部面板 -->
+    <view class="camera-bottom-panel">
+      <!-- 照片预览 - 横向排列 -->
+      <view class="photo-thumbnail-list" wx:if="{{cameraPhotos.length > 0}}">
+        <scroll-view scroll-x class="thumbnail-scroll" enhanced show-scrollbar="{{false}}">
+          <view 
+            wx:for="{{cameraPhotos}}" 
+            wx:key="index"
+            class="thumbnail-item {{currentCameraIndex === index ? 'active' : ''}}"
+          >
+            <image class="thumbnail-img" src="{{item}}" mode="aspectFill" bindtap="onStartAdjustPhoto" data-index="{{index}}"></image>
+            <view class="thumbnail-delete" catchtap="onDeletePhoto" data-index="{{index}}">✕</view>
+          </view>
+        </scroll-view>
+      </view>
+
+      <!-- 餐别选择 -->
+      <view class="camera-meal-section">
+        <text class="camera-section-title">选择餐别</text>
+        <scroll-view scroll-x class="camera-meal-scroll" enhanced show-scrollbar="{{false}}">
+          <view class="camera-meal-list">
+            <view 
+              wx:for="{{cameraMealTypes}}" 
+              wx:key="key"
+              class="camera-meal-item {{cameraMealType === item.key ? 'selected' : ''}}"
+              style="{{cameraMealType === item.key ? '--active-color:' + item.color : ''}}"
+              bindtap="onCameraMealTap"
+              data-key="{{item.key}}"
+            >
+              <view class="camera-meal-icon" style="background: {{cameraMealType === item.key ? item.color : 'rgba(255,255,255,0.12)'}};">
+                <text class="camera-meal-emoji">{{item.emoji}}</text>
+              </view>
+              <text class="camera-meal-label">{{item.label}}</text>
+            </view>
+          </view>
+        </scroll-view>
+      </view>
+
+      <!-- 标题 -->
+      <view class="camera-title-section" bindtap="onCameraTitleTap">
+        <text class="camera-section-title">标题</text>
+        <view class="camera-title-bar">
+          <text class="camera-title-text">{{cameraTitle}}</text>
+          <view class="camera-title-edit">
+            <text>编辑</text>
+            <view class="arrow-right"></view>
+          </view>
         </view>
-      </scroll-view>
+      </view>
+
+      <!-- 底部控制栏 -->
+      <view class="camera-controls">
+        <view class="control-btn" bindtap="onChooseFromAlbum">
+          <view class="control-icon-wrapper">
+            <text class="control-icon">🖼️</text>
+          </view>
+          <text class="control-label">相册</text>
+        </view>
+        <view class="capture-wrapper">
+          <view class="capture-btn" bindtap="onTakePhoto">
+            <view class="capture-inner"></view>
+          </view>
+        </view>
+        <view class="control-btn {{cameraPhotos.length > 0 ? '' : 'disabled'}}" bindtap="onSavePhotos">
+          <view class="control-icon-wrapper">
+            <text class="control-icon">✔</text>
+          </view>
+          <text class="control-label">保存</text>
+        </view>
+      </view>
     </view>
 
-    <!-- 底部控制栏 -->
-    <view class="camera-controls">
-      <view class="control-btn" bindtap="onChooseFromAlbum">
-        <view class="control-icon-wrapper">
-          <text class="control-icon">🖼️</text>
+    <!-- 上传状态遮罩 -->
+    <view class="camera-upload-overlay" wx:if="{{isUploading || uploadProgress}}">
+      <view class="upload-card">
+        <view class="spinner-wrapper">
+          <view class="spinner" wx:if="{{isUploading}}"></view>
+          <text class="success-icon" wx:if="{{!isUploading && uploadProgress === '上传完成'}}">✓</text>
         </view>
-        <text class="control-label">相册</text>
-      </view>
-      <view class="capture-wrapper">
-        <view class="capture-btn" bindtap="onTakePhoto">
-          <view class="capture-inner"></view>
-        </view>
-      </view>
-      <view class="control-btn {{cameraPhotos.length > 0 ? '' : 'disabled'}}" bindtap="onSavePhotos">
-        <view class="control-icon-wrapper">
-          <text class="control-icon">✓</text>
-        </view>
-        <text class="control-label">保存</text>
+        <text class="status-text">{{uploadProgress || '上传中...'}}</text>
+        <text class="retry-text" wx:if="{{uploadProgress === '上传失败，点击重试'}}" bindtap="onRetryUpload">点击重试</text>
       </view>
     </view>
   </view>
 
   <!-- 隐藏的 canvas 用于裁剪 -->
-  <canvas canvas-id="photoCropper" style="width: 800px; height: 800px; position: absolute; left: -9999px;" />
+  <canvas canvas-id="photoCropper" width="{{cropCanvasSize}}" height="{{cropCanvasSize}}" style="width: {{cropCanvasSize}}px; height: {{cropCanvasSize}}px; position: absolute; left: -9999px; top: -9999px;" />
+  <!-- 隐藏的 canvas 用于海报 -->
+  <view class="poster-canvas-container">
+    <canvas type="2d" id="posterCanvas" style="width: 320px; height: 480px;"></canvas>
+  </view>
 </view>

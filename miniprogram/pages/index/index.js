@@ -1,5 +1,6 @@
 const app = getApp();
-const { recognizeMealType, getMealTypeInfo, getAllMealTypes, MEAL_TYPES } = require('../../utils/meal');
+const { recognizeMealType, getMealTypeInfo, getAllMealTypes, generateTitle } = require('../../utils/meal');
+const { formatTime } = require('../../utils/util');
 
 const TIME_THEMES = {
   dawn: {
@@ -108,11 +109,22 @@ Page({
     cameraPhotos: [],
     photoAdjustData: [],
     currentCameraIndex: 0,
+    cameraMealTypes: [],
+    cameraMealType: 'lunch',
+    cameraTitle: '',
+    isUploading: false,
+    uploadProgress: '',
+    uploadedCount: 0,
+    totalCount: 0,
+    pendingCroppedPhotos: [],
+    cropCanvasSize: 800,
+    adjustFramePx: 560,
     isAdjustingPhoto: false,
     adjustPhotoIndex: -1,
     adjustScale: 1,
     adjustX: 0,
     adjustY: 0,
+    currentPosterStyle: 'simple',
     cameraContext: null,
     touchStartDistance: 0,
     touchStartScale: 1,
@@ -132,6 +144,10 @@ Page({
     this.setData({
       cameraContext: wx.createCameraContext(),
     });
+
+    const system = wx.getSystemInfoSync();
+    const framePx = system.windowWidth * 560 / 750;
+    this.setData({ adjustFramePx: framePx });
   },
   
   updateDate: function() {
@@ -206,10 +222,20 @@ Page({
   },
 
   openCameraPopup: function () {
+    const defaultMeal = recognizeMealType(new Date());
+    const defaultTitle = generateTitle(defaultMeal.key);
     this.setData({
       showCameraPopup: true,
       cameraPhotos: [],
       photoAdjustData: [],
+      cameraMealTypes: getAllMealTypes(),
+      cameraMealType: defaultMeal.key,
+      cameraTitle: defaultTitle,
+      uploadProgress: '',
+      isUploading: false,
+      uploadedCount: 0,
+      totalCount: 0,
+      pendingCroppedPhotos: [],
     });
     setTimeout(() => {
       this.setData({ cameraContext: wx.createCameraContext() });
@@ -238,6 +264,7 @@ Page({
           cameraPhotos: newPhotos,
           photoAdjustData: newAdjustData,
           currentCameraIndex: newPhotos.length - 1,
+          totalCount: newPhotos.length,
         });
       },
       fail: (err) => {
@@ -264,6 +291,7 @@ Page({
         this.setData({
           cameraPhotos: allPhotos.slice(0, 9),
           photoAdjustData: newAdjustData.slice(0, 9),
+          totalCount: allPhotos.slice(0, 9).length,
         });
       },
     });
@@ -288,7 +316,7 @@ Page({
     this.setData({
       isAdjustingPhoto: true,
       adjustPhotoIndex: index,
-      adjustScale: adjustData.scale,
+      adjustScale: Math.max(1, adjustData.scale || 1),
       adjustX: adjustData.x,
       adjustY: adjustData.y,
       touchStartDistance: 0,
@@ -323,16 +351,17 @@ Page({
       const distance = Math.sqrt(dx * dx + dy * dy);
       const scale = this.data.touchStartScale * (distance / this.data.touchStartDistance);
       this.setData({
-        adjustScale: Math.max(0.5, Math.min(3, scale)),
+        adjustScale: Math.max(1, Math.min(3, scale)),
       });
     } else if (e.touches.length === 1) {
       const deltaX = e.touches[0].clientX - this.data.touchStartX;
       const deltaY = e.touches[0].clientY - this.data.touchStartY;
       const newX = this.data.touchStartAdjustX + deltaX;
       const newY = this.data.touchStartAdjustY + deltaY;
+      const maxOffset = (this.data.adjustScale - 1) * (this.data.adjustFramePx / 2);
       this.setData({
-        adjustX: newX,
-        adjustY: newY,
+        adjustX: Math.max(-maxOffset, Math.min(maxOffset, newX)),
+        adjustY: Math.max(-maxOffset, Math.min(maxOffset, newY)),
       });
     }
   },
@@ -344,7 +373,7 @@ Page({
   onConfirmAdjust: function() {
     const { adjustPhotoIndex, adjustScale, adjustX, adjustY, photoAdjustData } = this.data;
     const newAdjustData = [...photoAdjustData];
-    newAdjustData[adjustPhotoIndex] = { scale: adjustScale, x: adjustX, y: adjustY };
+    newAdjustData[adjustPhotoIndex] = { scale: Math.max(1, adjustScale), x: adjustX, y: adjustY };
     this.setData({
       photoAdjustData: newAdjustData,
       isAdjustingPhoto: false,
@@ -360,45 +389,86 @@ Page({
   },
 
   onSavePhotos: async function() {
+    if (this.data.isUploading) return;
     const { cameraPhotos, photoAdjustData } = this.data;
     if (cameraPhotos.length === 0) {
       wx.showToast({ title: '请先拍照', icon: 'none' });
       return;
     }
 
-    wx.showLoading({ title: '裁剪中...' });
+    const loggedIn = await this.ensureLogin();
+    if (!loggedIn) return;
+
+    this.setData({
+      isUploading: true,
+      uploadProgress: '裁剪中...',
+      uploadedCount: 0,
+      totalCount: cameraPhotos.length,
+    });
 
     try {
       const croppedPhotos = [];
-      
+
       for (let i = 0; i < cameraPhotos.length; i++) {
         const photo = cameraPhotos[i];
         const adjustData = photoAdjustData[i] || { scale: 1, x: 0, y: 0 };
-        
         const cropped = await this.cropToSquare(photo, adjustData);
         croppedPhotos.push(cropped);
       }
-      
-      const timestamp = Date.now();
-      const mealTypeInfo = recognizeMealType(new Date(timestamp));
-      
-      this.setData({ showCameraPopup: false });
-      wx.hideLoading();
-      
-      wx.navigateTo({
-        url: `/pages/preview/preview?imagePaths=${encodeURIComponent(JSON.stringify(croppedPhotos))}&timestamp=${timestamp}&mealType=${mealTypeInfo.key}`,
-      });
+
+      this.setData({ pendingCroppedPhotos: croppedPhotos });
+      await this.uploadAndSave(croppedPhotos);
     } catch (err) {
-      wx.hideLoading();
-      wx.showToast({ title: '裁剪失败', icon: 'none' });
       console.error(err);
+      this.setData({ isUploading: false, uploadProgress: '上传失败，点击重试' });
     }
+  },
+
+  uploadAndSave: async function (imagePaths) {
+    try {
+      const imageUrls = await this.uploadAllImages(imagePaths);
+      this.setData({ uploadProgress: '保存中...' });
+      const saveRes = await this.saveRecord(imageUrls);
+
+      this.setData({
+        isUploading: false,
+        uploadProgress: '上传完成',
+        showCameraPopup: false,
+        cameraPhotos: [],
+        photoAdjustData: [],
+        pendingCroppedPhotos: [],
+        currentCameraIndex: 0,
+      });
+
+      wx.showToast({ title: '保存成功', icon: 'success' });
+      this.loadTodayMeals();
+
+      setTimeout(() => {
+        this.setData({ uploadProgress: '' });
+      }, 1500);
+
+      return saveRes;
+    } catch (err) {
+      console.error('保存失败', err);
+      this.setData({ isUploading: false, uploadProgress: '上传失败，点击重试' });
+      wx.showToast({ title: '保存失败，请重试', icon: 'none' });
+      throw err;
+    }
+  },
+
+  onRetryUpload: function () {
+    if (this.data.isUploading) return;
+    const { pendingCroppedPhotos } = this.data;
+    if (!pendingCroppedPhotos || pendingCroppedPhotos.length === 0) {
+      this.onSavePhotos();
+      return;
+    }
+    this.setData({ isUploading: true, uploadProgress: '上传中...' });
+    this.uploadAndSave(pendingCroppedPhotos);
   },
 
   cropToSquare: function(photoPath, adjustData) {
     return new Promise((resolve) => {
-      const ctx = wx.createCanvasContext('photoCropper', this);
-      
       wx.getImageInfo({
         src: photoPath,
         success: (info) => {
@@ -406,31 +476,32 @@ Page({
           const srcX = (info.width - srcSize) / 2;
           const srcY = (info.height - srcSize) / 2;
           
-          const scale = adjustData ? adjustData.scale : 1;
-          const offsetX = adjustData ? adjustData.x : 0;
-          const offsetY = adjustData ? adjustData.y : 0;
-          
-          const dstSize = 800;
-          
-          ctx.setFillStyle('#FFFFFF');
-          ctx.fillRect(0, 0, dstSize, dstSize);
-          
-          const drawWidth = srcSize * scale;
-          const drawHeight = srcSize * scale;
-          const drawX = (dstSize - drawWidth) / 2 + offsetX;
-          const drawY = (dstSize - drawHeight) / 2 + offsetY;
-          
-          ctx.drawImage(photoPath, srcX, srcY, srcSize, srcSize, drawX, drawY, drawWidth, drawHeight);
-          
-          ctx.draw(false, () => {
-            setTimeout(() => {
+          const dstSize = srcSize;
+          const scale = Math.max(1, adjustData ? adjustData.scale : 1);
+          const framePx = this.data.adjustFramePx || 560;
+          const offsetScale = dstSize / framePx;
+          const rawOffsetX = (adjustData ? adjustData.x : 0) * offsetScale;
+          const rawOffsetY = (adjustData ? adjustData.y : 0) * offsetScale;
+
+          const drawSize = dstSize * scale;
+          const maxOffset = (drawSize - dstSize) / 2;
+          const offsetX = Math.max(-maxOffset, Math.min(maxOffset, rawOffsetX));
+          const offsetY = Math.max(-maxOffset, Math.min(maxOffset, rawOffsetY));
+          const drawX = (dstSize - drawSize) / 2 + offsetX;
+          const drawY = (dstSize - drawSize) / 2 + offsetY;
+
+          this.setData({ cropCanvasSize: dstSize }, () => {
+            const ctx = wx.createCanvasContext('photoCropper', this);
+            ctx.clearRect(0, 0, dstSize, dstSize);
+            ctx.drawImage(photoPath, srcX, srcY, srcSize, srcSize, drawX, drawY, drawSize, drawSize);
+            ctx.draw(false, () => {
               wx.canvasToTempFilePath({
                 canvasId: 'photoCropper',
                 width: dstSize,
                 height: dstSize,
                 destWidth: dstSize,
                 destHeight: dstSize,
-                quality: 0.85,
+                quality: 1,
                 fileType: 'jpg',
                 success: (res) => {
                   resolve(res.tempFilePath);
@@ -440,13 +511,105 @@ Page({
                   resolve(photoPath);
                 }
               }, this);
-            }, 200);
+            });
           });
         },
         fail: () => {
           resolve(photoPath);
         }
       });
+    });
+  },
+
+  uploadAllImages: async function (imagePaths) {
+    const uploadedUrls = [];
+
+    for (let i = 0; i < imagePaths.length; i++) {
+      this.setData({ uploadProgress: `上传 ${i + 1}/${imagePaths.length}` });
+      const url = await this.uploadSingleImage(imagePaths[i]);
+      uploadedUrls.push(url);
+      this.setData({ uploadedCount: i + 1 });
+    }
+
+    return uploadedUrls;
+  },
+
+  uploadSingleImage: function (imagePath) {
+    return new Promise((resolve, reject) => {
+      this.doUpload(imagePath, resolve, reject);
+    });
+  },
+
+  doUpload: function (filePath, resolve, reject) {
+    wx.uploadFile({
+      url: `${app.globalData.apiBase}/api/upload`,
+      filePath: filePath,
+      name: 'files',
+      header: {
+        'Authorization': `Bearer ${app.getToken()}`,
+      },
+      timeout: 60000,
+      success: (res) => {
+        if (res.statusCode >= 400) {
+          reject(new Error(`服务器错误: ${res.statusCode}`));
+          return;
+        }
+        try {
+          const data = JSON.parse(res.data);
+          if (data.success) {
+            resolve(data.data.imageUrls[0]);
+          } else {
+            reject(new Error(data.error || '上传失败'));
+          }
+        } catch (e) {
+          reject(new Error('解析响应失败: ' + res.data));
+        }
+      },
+      fail: (err) => {
+        if (err.errMsg && err.errMsg.includes('timeout')) {
+          reject(new Error('上传超时，请重试'));
+        } else {
+          reject(new Error('网络请求失败: ' + (err.errMsg || '未知错误')));
+        }
+      },
+    });
+  },
+
+  saveRecord: function (imageUrls) {
+    return app.request({
+      url: '/api/records',
+      method: 'POST',
+      data: {
+        imageUrls,
+        mealType: this.data.cameraMealType,
+        title: this.data.cameraTitle,
+        timestamp: Date.now(),
+      },
+    });
+  },
+
+  onCameraMealTap: function (e) {
+    const { key } = e.currentTarget.dataset;
+    this.setData({
+      cameraMealType: key,
+      cameraTitle: generateTitle(key),
+    });
+  },
+
+  onCameraTitleTap: function () {
+    const mealInfo = getMealTypeInfo(this.data.cameraMealType);
+    const items = [
+      `${mealInfo.label}打卡`,
+      '今日美食',
+      '分享这顿饭',
+    ];
+    wx.showActionSheet({
+      itemList: items,
+      success: (res) => {
+        this.setData({
+          cameraTitle: items[res.tapIndex],
+        });
+      },
     });
   },
 
@@ -515,23 +678,204 @@ Page({
 
   onSharePoster: function() {
     const { popupRecord } = this.data;
-    if (popupRecord) {
-      wx.navigateTo({
-        url: `/pages/detail/detail?id=${popupRecord.id}`,
-      });
+    if (!popupRecord) return;
+    if (!popupRecord.imageUrl || popupRecord.imageUrl.length === 0) {
+      wx.showToast({ title: '没有可用图片', icon: 'none' });
+      return;
     }
+
+    const styles = [
+      { name: '简约白', key: 'simple' },
+      { name: '时光灰', key: 'time' },
+      { name: '手写暖', key: 'warm' },
+    ];
+
+    wx.showActionSheet({
+      itemList: styles.map(s => s.name),
+      success: (res) => {
+        const selectedStyle = styles[res.tapIndex];
+        this.setData({ currentPosterStyle: selectedStyle.key });
+        this.generatePoster(popupRecord);
+      },
+    });
+
     this.onClosePopup();
   },
 
-  onShareMiniApp: function() {
-    const { popupRecord, popupMealInfo } = this.data;
-    if (popupRecord) {
-      wx.showShareMenu({
-        withShareTicket: true,
-        menus: ['shareAppMessage', 'shareTimeline'],
+  generatePoster: function (record) {
+    wx.showLoading({ title: '生成中...' });
+
+    const mealTypeInfo = getMealTypeInfo(record.mealType);
+    const formattedTime = formatTime(new Date(record.timestamp));
+
+    app.request({
+      url: '/api/qrcode',
+      method: 'GET',
+      data: { scene: record.id },
+    }).then((res) => {
+      if (res.data && res.data.qrcode) {
+        this.drawPoster(record.imageUrl, res.data.qrcode, mealTypeInfo, formattedTime, record.id);
+      } else {
+        throw new Error('生成小程序码失败');
+      }
+    }).catch((err) => {
+      console.error('生成海报失败', err);
+      wx.hideLoading();
+      wx.showToast({ title: '生成失败', icon: 'none' });
+    });
+  },
+
+  drawPoster: function (imageUrl, qrcodeDataUrl, mealTypeInfo, formattedTime, recordId) {
+    const style = this.data.currentPosterStyle || 'simple';
+    const imageSrc = Array.isArray(imageUrl) ? imageUrl[0] : imageUrl;
+    const query = wx.createSelectorQuery();
+    query.select('#posterCanvas').fields({ node: true, size: true }).exec((res) => {
+      if (!res[0]) {
+        wx.hideLoading();
+        wx.showToast({ title: '生成失败', icon: 'none' });
+        return;
+      }
+      const canvas = res[0].node;
+      const ctx = canvas.getContext('2d');
+      const dpr = wx.getSystemInfoSync().pixelRatio;
+
+      canvas.width = res[0].width * dpr;
+      canvas.height = res[0].height * dpr;
+      ctx.scale(dpr, dpr);
+
+      wx.getImageInfo({
+        src: imageSrc,
+        success: (imgRes) => {
+          const img = canvas.createImage();
+          img.src = imgRes.path;
+          img.onload = () => {
+            if (style === 'simple') {
+              this.drawSimpleStyle(ctx, canvas, img, qrcodeDataUrl);
+            } else if (style === 'time') {
+              this.drawTimeStyle(ctx, canvas, img, qrcodeDataUrl, formattedTime);
+            } else if (style === 'warm') {
+              this.drawWarmStyle(ctx, canvas, img, qrcodeDataUrl);
+            }
+          };
+        },
+        fail: () => {
+          wx.hideLoading();
+          wx.showToast({ title: '生成失败', icon: 'none' });
+        },
       });
-    }
-    this.onClosePopup();
+    });
+  },
+
+  drawSimpleStyle: function (ctx, canvas, img, qrcodeDataUrl) {
+    ctx.fillStyle = '#FFFFFF';
+    ctx.fillRect(0, 0, 320, 480);
+
+    const imgSize = 280;
+    const imgX = (320 - imgSize) / 2;
+    ctx.drawImage(img, imgX, 20, imgSize, imgSize);
+
+    const qrImg = canvas.createImage();
+    qrImg.src = qrcodeDataUrl;
+    qrImg.onload = () => {
+      ctx.drawImage(qrImg, 250, 400, 50, 50);
+
+      ctx.fillStyle = '#666666';
+      ctx.font = '12px sans-serif';
+      ctx.fillText('扫码看这顿饭', 20, 440);
+
+      wx.canvasToTempFilePath({
+        canvas: canvas,
+        success: (canvasRes) => {
+          wx.hideLoading();
+          this.saveToAlbum(canvasRes.tempFilePath);
+        },
+        fail: (err) => {
+          console.error('导出海报失败', err);
+          wx.hideLoading();
+          wx.showToast({ title: '生成失败', icon: 'none' });
+        },
+      });
+    };
+  },
+
+  drawTimeStyle: function (ctx, canvas, img, qrcodeDataUrl, formattedTime) {
+    const gradient = ctx.createLinearGradient(0, 0, 0, 480);
+    gradient.addColorStop(0, '#F8F9FA');
+    gradient.addColorStop(1, '#E9ECEF');
+    ctx.fillStyle = gradient;
+    ctx.fillRect(0, 0, 320, 480);
+
+    ctx.drawImage(img, 20, 60, 280, 280);
+
+    const dateText = formattedTime.full;
+    ctx.fillStyle = '#333333';
+    ctx.font = 'bold 16px sans-serif';
+    ctx.fillText(dateText, 20, 40);
+
+    const qrImg = canvas.createImage();
+    qrImg.src = qrcodeDataUrl;
+    qrImg.onload = () => {
+      ctx.drawImage(qrImg, 20, 380, 60, 60);
+
+      wx.canvasToTempFilePath({
+        canvas: canvas,
+        success: (canvasRes) => {
+          wx.hideLoading();
+          this.saveToAlbum(canvasRes.tempFilePath);
+        },
+        fail: (err) => {
+          console.error('导出海报失败', err);
+          wx.hideLoading();
+          wx.showToast({ title: '生成失败', icon: 'none' });
+        },
+      });
+    };
+  },
+
+  drawWarmStyle: function (ctx, canvas, img, qrcodeDataUrl) {
+    ctx.fillStyle = '#FFF9F0';
+    ctx.fillRect(0, 0, 320, 480);
+
+    const imgSize = 260;
+    const imgX = (320 - imgSize) / 2;
+    ctx.drawImage(img, imgX, 30, imgSize, imgSize);
+
+    ctx.fillStyle = '#5D4037';
+    ctx.font = '24px "Ma Shan Zheng", cursive';
+    ctx.textAlign = 'center';
+    ctx.fillText('今天吃这个！', 160, 330);
+    ctx.textAlign = 'left';
+
+    const qrImg = canvas.createImage();
+    qrImg.src = qrcodeDataUrl;
+    qrImg.onload = () => {
+      ctx.drawImage(qrImg, 250, 410, 50, 50);
+
+      wx.canvasToTempFilePath({
+        canvas: canvas,
+        success: (canvasRes) => {
+          wx.hideLoading();
+          this.saveToAlbum(canvasRes.tempFilePath);
+        },
+        fail: (err) => {
+          console.error('导出海报失败', err);
+          wx.hideLoading();
+          wx.showToast({ title: '生成失败', icon: 'none' });
+        },
+      });
+    };
+  },
+
+  saveToAlbum: function (filePath) {
+    wx.saveImageToPhotosAlbum({
+      filePath: filePath,
+      success: () => {
+        wx.showToast({ title: '已保存到相册', icon: 'success' });
+      },
+      fail: () => {
+        wx.showToast({ title: '保存失败', icon: 'none' });
+      },
+    });
   },
 
   onAddClick: async function () {
@@ -554,10 +898,30 @@ Page({
     });
   },
 
-  onShareAppMessage: function () {
+  onShareAppMessage: function (res) {
+    if (res && res.from === 'button' && res.target && res.target.dataset) {
+      const { id, title } = res.target.dataset;
+      return {
+        title: title || '好好吃饭',
+        path: `/pages/detail/detail?id=${id}`,
+      };
+    }
     return {
       title: '好好吃饭',
       path: '/pages/index/index',
+    };
+  },
+
+  onShareTimeline: function (res) {
+    if (res && res.target && res.target.dataset && res.target.dataset.id) {
+      return {
+        title: res.target.dataset.title || '好好吃饭',
+        query: `id=${res.target.dataset.id}`,
+      };
+    }
+    return {
+      title: '好好吃饭',
+      query: '',
     };
   },
 });
