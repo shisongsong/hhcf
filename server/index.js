@@ -124,10 +124,43 @@ app.get('/api/records', async (req, res) => {
   if (!openid) return res.status(401).json({ error: '未登录' });
 
   try {
-    const [rows] = await pool.execute(
-      'SELECT id, share_id as shareId, openid, image_url, meal_type as mealType, title, timestamp, created_at as createdAt FROM records WHERE openid = ? ORDER BY timestamp DESC',
-      [openid]
-    );
+    const limitRaw = Number.parseInt(req.query.limit, 10);
+    const startTime = Number.parseInt(req.query.startTime, 10);
+    const endTime = Number.parseInt(req.query.endTime, 10);
+    const cursor = typeof req.query.cursor === 'string' ? req.query.cursor : '';
+    const [cursorTsRaw, cursorIdRaw] = cursor ? cursor.split('_') : [];
+    const cursorTs = Number.parseInt(cursorTsRaw, 10);
+    const cursorId = cursorIdRaw || '';
+
+    const hasRangeFilter = Number.isFinite(startTime) || Number.isFinite(endTime);
+    const hasCursorFilter = Number.isFinite(cursorTs) && cursorId;
+    const hasLimit = Number.isFinite(limitRaw) && limitRaw > 0;
+    const isPagedQuery = hasRangeFilter || hasCursorFilter || hasLimit;
+    const limit = Math.max(10, Math.min(100, hasLimit ? limitRaw : 40));
+
+    let sql = 'SELECT id, share_id as shareId, openid, image_url, meal_type as mealType, title, timestamp, created_at as createdAt FROM records WHERE openid = ?';
+    const params = [openid];
+
+    if (Number.isFinite(startTime)) {
+      sql += ' AND timestamp >= ?';
+      params.push(startTime);
+    }
+    if (Number.isFinite(endTime)) {
+      sql += ' AND timestamp < ?';
+      params.push(endTime);
+    }
+    if (hasCursorFilter) {
+      sql += ' AND (timestamp < ? OR (timestamp = ? AND id < ?))';
+      params.push(cursorTs, cursorTs, cursorId);
+    }
+
+    sql += ' ORDER BY timestamp DESC, id DESC';
+    if (isPagedQuery) {
+      sql += ' LIMIT ?';
+      params.push(limit);
+    }
+
+    const [rows] = await pool.execute(sql, params);
     const records = [];
     for (const row of rows) {
       const record = {
@@ -140,7 +173,25 @@ app.get('/api/records', async (req, res) => {
       }
       records.push(record);
     }
-    res.json({ success: true, data: records });
+
+    if (!isPagedQuery) {
+      res.json({ success: true, data: records });
+      return;
+    }
+
+    const hasMore = records.length >= limit;
+    const nextCursor = hasMore && records.length > 0
+      ? `${records[records.length - 1].timestamp}_${records[records.length - 1].id}`
+      : '';
+
+    res.json({
+      success: true,
+      data: {
+        records,
+        hasMore,
+        nextCursor,
+      },
+    });
   } catch (err) {
     console.error('查询记录失败:', err);
     res.status(500).json({ error: '查询失败' });

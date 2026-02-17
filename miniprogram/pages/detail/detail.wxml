@@ -15,14 +15,14 @@
         <text class="time-text" style="color: {{theme.textSecondary}};">{{formattedTime.time}}</text>
       </view>
 
-      <text class="record-title" style="color: {{theme.textPrimary}};">{{record.title}}</text>
-      <text class="record-subtitle" style="color: {{theme.textSecondary}};">{{formattedTime.full}}</text>
+      <text class="record-title">{{record.title}}</text>
+      <text class="record-subtitle" style="color: {{theme.textSecondary}};">{{formattedTime.displayDate}}</text>
 
       <swiper
         class="photo-swiper"
         current="{{currentImageIndex}}"
         bindchange="onSwiperChange"
-        indicator-dots="false"
+        indicator-dots="{{false}}"
         circular="false"
       >
         <swiper-item wx:for="{{record.imageUrl}}" wx:key="index">
@@ -31,25 +31,15 @@
           </view>
         </swiper-item>
       </swiper>
-
       <view class="dot-indicator" wx:if="{{record.imageUrl.length > 1}}">
-        <view wx:for="{{record.imageUrl}}" wx:key="index" class="dot {{currentImageIndex === index ? 'active' : ''}}" style="{{currentImageIndex === index ? 'background:' + mealTypeInfo.color + ';' : ''}}"></view>
+        <view
+          wx:for="{{record.imageUrl}}"
+          wx:key="index"
+          class="dot {{currentImageIndex === index ? 'active' : ''}}"
+          style="{{currentImageIndex === index ? 'background:' + mealTypeInfo.color + ';' : ''}}"
+        ></view>
       </view>
-    </view>
 
-    <view class="meta-card">
-      <view class="meta-item">
-        <text class="meta-label">图片数量</text>
-        <text class="meta-value">{{record.imageUrl.length}} 张</text>
-      </view>
-      <view class="meta-item">
-        <text class="meta-label">记录日期</text>
-        <text class="meta-value">{{formattedTime.displayDate}}</text>
-      </view>
-      <view class="meta-item">
-        <text class="meta-label">访问模式</text>
-        <text class="meta-value">{{isSharedView ? '分享访问' : '我的记录'}}</text>
-      </view>
     </view>
 
     <view class="action-card">

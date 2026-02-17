@@ -46,6 +46,10 @@
   transition: all 0.2s ease;
 }
 
+.mode-btn:active {
+  transform: scale(0.97);
+}
+
 .timeline {
   flex: 1;
   min-height: 0;
@@ -126,6 +130,12 @@
   box-shadow: 0 8rpx 24rpx rgba(0, 0, 0, 0.08);
   box-sizing: border-box;
   overflow: hidden;
+  transition: transform 0.18s ease, box-shadow 0.2s ease;
+}
+
+.timeline-content:active {
+  transform: scale(0.985);
+  box-shadow: 0 6rpx 18rpx rgba(0, 0, 0, 0.09);
 }
 
 .content-header {
@@ -188,6 +198,12 @@
   background: rgba(255, 255, 255, 0.7);
   font-size: 22rpx;
   color: #7f6757;
+  transition: transform 0.18s ease, background 0.2s ease;
+}
+
+.period-btn:active {
+  transform: scale(0.95);
+  background: rgba(255, 255, 255, 0.92);
 }
 
 .period-center {
@@ -210,6 +226,11 @@
   background: rgba(255, 255, 255, 0.88);
   border-radius: 999rpx;
   padding: 6rpx 16rpx;
+  transition: transform 0.18s ease;
+}
+
+.period-reset:active {
+  transform: scale(0.95);
 }
 
 .week-day-list {
@@ -223,6 +244,11 @@
   border-radius: 20rpx;
   padding: 18rpx 16rpx 16rpx;
   box-shadow: 0 6rpx 18rpx rgba(0, 0, 0, 0.06);
+  transition: transform 0.2s ease;
+}
+
+.week-day-card:active {
+  transform: scale(0.992);
 }
 
 .week-day-card.today {
@@ -272,6 +298,11 @@
   flex-direction: column;
   align-items: center;
   gap: 6rpx;
+  transition: transform 0.18s ease;
+}
+
+.meal-icon-item:active {
+  transform: scale(0.94);
 }
 
 .meal-icon-item.unchecked {
@@ -319,6 +350,11 @@
   align-items: stretch;
   justify-content: flex-start;
   min-height: 156rpx;
+  transition: transform 0.18s ease;
+}
+
+.month-cell:not(.placeholder):active {
+  transform: scale(0.985);
 }
 
 .month-cell.placeholder {
@@ -430,4 +466,11 @@
 .empty-hint {
   font-size: 26rpx;
   color: #8b7355;
+}
+
+.list-status {
+  padding: 8rpx 0 24rpx;
+  text-align: center;
+  color: rgba(90, 90, 90, 0.64);
+  font-size: 22rpx;
 }

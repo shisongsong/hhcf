@@ -1,7 +1,8 @@
 const app = getApp();
 const { formatTime } = require('../../utils/util');
 const { getMealTypeInfo } = require('../../utils/meal');
-const { getTimeTheme, applyTabBarTheme, applyNavigationTheme } = require('../../utils/theme');
+const { getActiveTheme, applyTabBarTheme, applyNavigationTheme } = require('../../utils/theme');
+const { pickRandomShareCard } = require('../../utils/share-card');
 
 const POSTER_STYLES = [
   {
@@ -28,7 +29,7 @@ Page({
     record: null,
     mealTypeInfo: null,
     formattedTime: null,
-    theme: getTimeTheme(),
+    theme: getActiveTheme(),
     isOwner: false,
     isSharedView: false,
     currentImageIndex: 0,
@@ -68,7 +69,7 @@ Page({
   },
 
   updateTheme: function () {
-    const theme = getTimeTheme();
+    const theme = getActiveTheme();
     this.setData({ theme: theme });
     applyTabBarTheme(theme);
     applyNavigationTheme(theme);
@@ -348,59 +349,61 @@ Page({
 
     const bg = ctx.createLinearGradient(0, 0, 0, height);
     bg.addColorStop(0, theme.bgGradient[0]);
-    bg.addColorStop(0.52, theme.bgGradient[1]);
+    bg.addColorStop(0.45, theme.bgGradient[1]);
     bg.addColorStop(1, theme.bgGradient[2]);
     ctx.fillStyle = bg;
     ctx.fillRect(0, 0, width, height);
 
-    ctx.globalAlpha = 0.22;
+    if (photos[0]) {
+      ctx.save();
+      ctx.globalAlpha = 0.22;
+      this.drawCoverImage(ctx, photos[0], 0, 0, width, height);
+      ctx.restore();
+    }
+
+    ctx.globalAlpha = 0.24;
     ctx.fillStyle = theme.blobs[0];
-    ctx.beginPath();
-    ctx.arc(width - 20, 60, 90, 0, Math.PI * 2);
+    this.drawRoundRectPath(ctx, -40, -40, 220, 160, 80);
+    ctx.fill();
+    ctx.fillStyle = theme.blobs[2];
+    this.drawRoundRectPath(ctx, 220, 20, 180, 120, 70);
     ctx.fill();
     ctx.fillStyle = theme.blobs[1];
-    ctx.beginPath();
-    ctx.arc(30, 360, 80, 0, Math.PI * 2);
+    this.drawRoundRectPath(ctx, -30, 460, 180, 170, 60);
     ctx.fill();
     ctx.globalAlpha = 1;
 
-    ctx.fillStyle = theme.textPrimary;
-    ctx.font = '700 20px sans-serif';
-    ctx.fillText('今天吃得真不错', 20, 42);
-    ctx.fillStyle = theme.textSecondary;
+    ctx.fillStyle = '#ffffff';
+    ctx.font = '700 34px sans-serif';
+    ctx.fillText('MEAL', 18, 48);
+    ctx.fillText('VIBES', 18, 84);
     ctx.font = '13px sans-serif';
-    ctx.fillText(this.data.formattedTime.full, 20, 62);
+    ctx.fillStyle = 'rgba(255,255,255,0.9)';
+    ctx.fillText(this.data.formattedTime.full, 20, 106);
 
-    const fallback = '#F5F5F5';
-    ctx.fillStyle = fallback;
+    this.drawPhotoOrPlaceholder(ctx, photos[0], 20, 122, 216, 258, 26, '主图');
+    this.drawPhotoOrPlaceholder(ctx, photos[1], 246, 122, 94, 122, 18, '加餐');
+    this.drawPhotoOrPlaceholder(ctx, photos[2], 246, 258, 94, 122, 18, '细节');
+    this.drawPhotoOrPlaceholder(ctx, photos[3], 20, 394, 320, 166, 24, '拼贴');
 
-    if (photos[0]) this.drawRoundedImage(ctx, photos[0], 20, 88, 220, 238, 24);
-    if (photos[1]) this.drawRoundedImage(ctx, photos[1], 250, 88, 90, 114, 18);
-    if (photos[2]) this.drawRoundedImage(ctx, photos[2], 250, 212, 90, 114, 18);
-    if (photos[3]) {
-      this.drawRoundedImage(ctx, photos[3], 20, 336, 320, 130, 22);
-    } else if (photos[1]) {
-      this.drawRoundedImage(ctx, photos[1], 20, 336, 320, 130, 22);
-    }
-
-    ctx.fillStyle = 'rgba(255,255,255,0.88)';
-    this.drawRoundRectPath(ctx, 20, 486, 320, 136, 24);
+    ctx.fillStyle = 'rgba(255,255,255,0.92)';
+    this.drawRoundRectPath(ctx, 20, 576, 320, 144, 24);
     ctx.fill();
 
-    ctx.fillStyle = theme.textPrimary;
-    ctx.font = '600 18px sans-serif';
+    ctx.fillStyle = '#2c241f';
+    ctx.font = '700 20px sans-serif';
     const title = (this.data.record && this.data.record.title) || '这顿饭值得记录';
-    this.drawWrappedText(ctx, title, 36, 520, 210, 2, 26);
+    this.drawWrappedText(ctx, title, 34, 614, 208, 2, 27);
 
+    ctx.fillStyle = '#7f6655';
     ctx.font = '13px sans-serif';
-    ctx.fillStyle = theme.textSecondary;
-    ctx.fillText(`${this.data.mealTypeInfo.emoji} ${this.data.mealTypeInfo.label}`, 36, 578);
+    ctx.fillText(`${this.data.mealTypeInfo.emoji} ${this.data.mealTypeInfo.label}`, 34, 672);
 
-    this.drawRoundedImage(ctx, qrcodeImg, 270, 510, 56, 56, 12);
+    this.drawRoundedImage(ctx, qrcodeImg, 266, 600, 58, 58, 12);
     ctx.font = '12px sans-serif';
-    ctx.fillStyle = theme.textSecondary;
+    ctx.fillStyle = '#7f6655';
     ctx.textAlign = 'center';
-    ctx.fillText('扫码看同款', 298, 584);
+    ctx.fillText('扫码看同款', 295, 680);
     ctx.textAlign = 'start';
   },
 
@@ -411,47 +414,55 @@ Page({
     const qrcodeImg = options.qrcodeImg;
     const theme = this.data.theme;
 
-    ctx.fillStyle = '#1e1e1e';
+    ctx.fillStyle = '#121212';
     ctx.fillRect(0, 0, width, height);
 
-    const stripWidth = 320;
+    const stripWidth = 330;
     const stripX = (width - stripWidth) / 2;
-    ctx.fillStyle = '#111';
-    this.drawRoundRectPath(ctx, stripX, 26, stripWidth, height - 52, 22);
+    ctx.fillStyle = '#0a0a0a';
+    this.drawRoundRectPath(ctx, stripX, 20, stripWidth, height - 40, 24);
     ctx.fill();
 
-    for (let i = 0; i < 14; i += 1) {
-      const y = 44 + i * 42;
-      ctx.fillStyle = '#3a3a3a';
-      ctx.fillRect(stripX + 12, y, 10, 14);
-      ctx.fillRect(stripX + stripWidth - 22, y, 10, 14);
+    for (let i = 0; i < 16; i += 1) {
+      const y = 38 + i * 40;
+      ctx.fillStyle = '#363636';
+      ctx.fillRect(stripX + 12, y, 9, 14);
+      ctx.fillRect(stripX + stripWidth - 21, y, 9, 14);
     }
 
     const frameList = [
-      { x: stripX + 34, y: 64, w: 252, h: 154 },
-      { x: stripX + 34, y: 238, w: 252, h: 154 },
-      { x: stripX + 34, y: 412, w: 252, h: 154 },
+      { x: stripX + 36, y: 58, w: 258, h: 170, rotate: -0.03, label: 'FRAME 01' },
+      { x: stripX + 36, y: 246, w: 258, h: 170, rotate: 0.02, label: 'FRAME 02' },
+      { x: stripX + 36, y: 434, w: 258, h: 170, rotate: -0.015, label: 'FRAME 03' },
     ];
+
+    ctx.fillStyle = '#ffffff';
+    ctx.font = '600 11px sans-serif';
     frameList.forEach((frame, idx) => {
-      ctx.fillStyle = '#222';
-      this.drawRoundRectPath(ctx, frame.x - 6, frame.y - 6, frame.w + 12, frame.h + 12, 14);
+      ctx.save();
+      ctx.translate(frame.x + frame.w / 2, frame.y + frame.h / 2);
+      ctx.rotate(frame.rotate);
+      ctx.translate(-(frame.x + frame.w / 2), -(frame.y + frame.h / 2));
+
+      ctx.fillStyle = '#262626';
+      this.drawRoundRectPath(ctx, frame.x - 7, frame.y - 7, frame.w + 14, frame.h + 14, 14);
       ctx.fill();
-      const photo = photos[idx] || photos[0];
-      if (photo) {
-        this.drawRoundedImage(ctx, photo, frame.x, frame.y, frame.w, frame.h, 10);
-      }
+
+      const photo = photos[idx];
+      this.drawPhotoOrPlaceholder(ctx, photo, frame.x, frame.y, frame.w, frame.h, 10, frame.label);
+      ctx.restore();
     });
 
-    ctx.fillStyle = '#f1f1f1';
-    ctx.font = '700 20px sans-serif';
-    ctx.fillText('FILM DINNER LOG', stripX + 34, 610);
-    ctx.font = '13px sans-serif';
-    ctx.fillStyle = '#bdbdbd';
-    ctx.fillText(this.data.formattedTime.full, stripX + 34, 630);
+    ctx.fillStyle = '#f5f5f5';
+    ctx.font = '700 24px sans-serif';
+    ctx.fillText('FILM LOG', stripX + 34, 644);
+    ctx.font = '12px sans-serif';
+    ctx.fillStyle = '#bbbbbb';
+    ctx.fillText(this.data.formattedTime.full, stripX + 34, 664);
 
-    this.drawRoundedImage(ctx, qrcodeImg, stripX + stripWidth - 90, 588, 56, 56, 10);
+    this.drawRoundedImage(ctx, qrcodeImg, stripX + stripWidth - 98, 626, 60, 60, 10);
     ctx.fillStyle = theme.accent;
-    ctx.fillRect(stripX + 34, 646, 74, 5);
+    ctx.fillRect(stripX + 34, 676, 88, 5);
   },
 
   drawPosterMag: function (ctx, options) {
@@ -462,47 +473,87 @@ Page({
     const theme = this.data.theme;
 
     const bg = ctx.createLinearGradient(0, 0, width, height);
-    bg.addColorStop(0, '#111111');
-    bg.addColorStop(0.4, '#212121');
-    bg.addColorStop(1, '#2f2f2f');
+    bg.addColorStop(0, '#191514');
+    bg.addColorStop(0.48, '#2b2320');
+    bg.addColorStop(1, '#362a26');
     ctx.fillStyle = bg;
     ctx.fillRect(0, 0, width, height);
 
+    ctx.fillStyle = theme.accent;
+    this.drawRoundRectPath(ctx, 14, 16, 332, 150, 24);
+    ctx.fill();
+
     ctx.fillStyle = '#ffffff';
-    ctx.font = '700 34px sans-serif';
-    ctx.fillText('MEAL', 20, 54);
-    ctx.font = '700 34px sans-serif';
-    ctx.fillText('STORY', 20, 90);
+    ctx.font = '700 32px sans-serif';
+    ctx.fillText('FOOD', 28, 66);
+    ctx.fillText('COVER', 28, 102);
     ctx.font = '12px sans-serif';
-    ctx.fillStyle = '#d0d0d0';
-    ctx.fillText(this.data.formattedTime.displayDate, 22, 112);
-
-    if (photos[0]) this.drawRoundedImage(ctx, photos[0], 20, 130, 320, 240, 28);
-    if (photos[1]) this.drawRoundedImage(ctx, photos[1], 20, 384, 154, 118, 20);
-    if (photos[2]) this.drawRoundedImage(ctx, photos[2], 186, 384, 154, 118, 20);
-    if (photos[3]) this.drawRoundedImage(ctx, photos[3], 20, 514, 320, 96, 20);
-
     ctx.fillStyle = 'rgba(255,255,255,0.9)';
-    this.drawRoundRectPath(ctx, 20, 622, 320, 106, 22);
+    ctx.fillText(this.data.formattedTime.displayDate, 28, 132);
+
+    this.drawPhotoOrPlaceholder(ctx, photos[0], 20, 178, 218, 262, 24, '主视觉');
+    this.drawPhotoOrPlaceholder(ctx, photos[1], 246, 178, 94, 126, 18, 'NO.2');
+    this.drawPhotoOrPlaceholder(ctx, photos[2], 246, 314, 94, 126, 18, 'NO.3');
+    this.drawPhotoOrPlaceholder(ctx, photos[3], 20, 452, 320, 132, 20, 'NO.4');
+
+    ctx.fillStyle = 'rgba(255,255,255,0.94)';
+    this.drawRoundRectPath(ctx, 20, 596, 320, 124, 22);
     ctx.fill();
 
     ctx.fillStyle = '#1f1f1f';
-    ctx.font = '700 17px sans-serif';
+    ctx.font = '700 20px sans-serif';
     const title = (this.data.record && this.data.record.title) || '我的打卡';
-    this.drawWrappedText(ctx, title, 34, 650, 200, 2, 24);
+    this.drawWrappedText(ctx, title, 34, 636, 200, 2, 26);
 
     ctx.fillStyle = theme.accent;
     ctx.font = '12px sans-serif';
-    ctx.fillText(`${this.data.mealTypeInfo.emoji} ${this.data.mealTypeInfo.label}`, 34, 700);
-    this.drawRoundedImage(ctx, qrcodeImg, 274, 640, 52, 52, 10);
+    ctx.fillText(`${this.data.mealTypeInfo.emoji} ${this.data.mealTypeInfo.label}`, 34, 694);
+    this.drawRoundedImage(ctx, qrcodeImg, 270, 622, 56, 56, 10);
   },
 
   drawRoundedImage: function (ctx, img, x, y, w, h, r) {
     ctx.save();
     this.drawRoundRectPath(ctx, x, y, w, h, r);
     ctx.clip();
-    ctx.drawImage(img, x, y, w, h);
+    this.drawCoverImage(ctx, img, x, y, w, h);
     ctx.restore();
+  },
+
+  drawCoverImage: function (ctx, img, x, y, w, h) {
+    const sourceW = img && img.width ? img.width : 0;
+    const sourceH = img && img.height ? img.height : 0;
+    if (!sourceW || !sourceH) {
+      ctx.drawImage(img, x, y, w, h);
+      return;
+    }
+    const scale = Math.max(w / sourceW, h / sourceH);
+    const drawW = sourceW * scale;
+    const drawH = sourceH * scale;
+    const drawX = x + (w - drawW) / 2;
+    const drawY = y + (h - drawH) / 2;
+    ctx.drawImage(img, drawX, drawY, drawW, drawH);
+  },
+
+  drawPhotoOrPlaceholder: function (ctx, photo, x, y, w, h, r, label) {
+    if (photo) {
+      this.drawRoundedImage(ctx, photo, x, y, w, h, r);
+      return;
+    }
+    const gradient = ctx.createLinearGradient(x, y, x + w, y + h);
+    gradient.addColorStop(0, 'rgba(255,255,255,0.22)');
+    gradient.addColorStop(1, 'rgba(255,255,255,0.08)');
+    ctx.fillStyle = gradient;
+    this.drawRoundRectPath(ctx, x, y, w, h, r);
+    ctx.fill();
+    ctx.strokeStyle = 'rgba(255,255,255,0.3)';
+    ctx.lineWidth = 1.2;
+    this.drawRoundRectPath(ctx, x + 1, y + 1, w - 2, h - 2, r);
+    ctx.stroke();
+    ctx.fillStyle = 'rgba(255,255,255,0.82)';
+    ctx.font = '12px sans-serif';
+    ctx.textAlign = 'center';
+    ctx.fillText(label || '待补图', x + w / 2, y + h / 2 + 4);
+    ctx.textAlign = 'start';
   },
 
   drawRoundRectPath: function (ctx, x, y, w, h, r) {
@@ -625,6 +676,7 @@ Page({
     return {
       title: (record && record.title) || '好好吃饭',
       path: path,
+      imageUrl: pickRandomShareCard(),
     };
   },
 
@@ -634,6 +686,7 @@ Page({
     return {
       title: (record && record.title) || '好好吃饭',
       query: shareParam ? `shareId=${shareParam}` : `id=${this.data.id}`,
+      imageUrl: pickRandomShareCard(),
     };
   },
 });

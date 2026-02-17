@@ -73,6 +73,8 @@ const TIME_THEMES = {
   },
 };
 
+const THEME_OVERRIDE_KEY = 'manualThemeKey';
+
 function getTimeTheme(date = new Date()) {
   const hour = date.getHours();
   for (const key in TIME_THEMES) {
@@ -81,6 +83,39 @@ function getTimeTheme(date = new Date()) {
     }
   }
   return { key: 'morning', ...TIME_THEMES.morning };
+}
+
+function getManualThemeKey() {
+  try {
+    return wx.getStorageSync(THEME_OVERRIDE_KEY) || '';
+  } catch (err) {
+    return '';
+  }
+}
+
+function setManualThemeKey(key) {
+  if (!key || !TIME_THEMES[key]) return;
+  try {
+    wx.setStorageSync(THEME_OVERRIDE_KEY, key);
+  } catch (err) {
+    // ignore
+  }
+}
+
+function clearManualThemeKey() {
+  try {
+    wx.removeStorageSync(THEME_OVERRIDE_KEY);
+  } catch (err) {
+    // ignore
+  }
+}
+
+function getActiveTheme(date = new Date()) {
+  const manualKey = getManualThemeKey();
+  if (manualKey && TIME_THEMES[manualKey]) {
+    return { key: manualKey, ...TIME_THEMES[manualKey], isManual: true };
+  }
+  return getTimeTheme(date);
 }
 
 function getThemeList() {
@@ -120,7 +155,11 @@ function applyNavigationTheme(theme) {
 module.exports = {
   TIME_THEMES,
   getTimeTheme,
+  getActiveTheme,
   getThemeList,
+  getManualThemeKey,
+  setManualThemeKey,
+  clearManualThemeKey,
   applyTabBarTheme,
   applyNavigationTheme,
 };

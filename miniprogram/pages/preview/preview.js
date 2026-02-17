@@ -1,10 +1,10 @@
 const { getMealTypeInfo, generateTitle, getAllMealTypes } = require('../../utils/meal');
 const app = getApp();
-const { getTimeTheme, applyTabBarTheme } = require('../../utils/theme');
+const { getActiveTheme, applyTabBarTheme } = require('../../utils/theme');
 
 Page({
   data: {
-    theme: getTimeTheme(),
+    theme: getActiveTheme(),
     imagePaths: [],
     imageUrls: [],
     timestamp: 0,
@@ -47,7 +47,7 @@ Page({
   },
 
   updateTheme: function () {
-    const theme = getTimeTheme();
+    const theme = getActiveTheme();
     this.setData({ theme });
     applyTabBarTheme(theme);
   },

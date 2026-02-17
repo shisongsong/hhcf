@@ -1,16 +1,17 @@
 <view class="container" style="background: linear-gradient(180deg, {{theme.bgGradient[0]}} 0%, {{theme.bgGradient[1]}} 58%, {{theme.bgGradient[2]}} 100%);">
+  <view class="page-bg" style="background: linear-gradient(180deg, {{theme.bgGradient[0]}} 0%, {{theme.bgGradient[1]}} 58%, {{theme.bgGradient[2]}} 100%);"></view>
   <view class="bg-blur bg-1" style="background: {{theme.blobs[0]}};"></view>
   <view class="bg-blur bg-2" style="background: {{theme.blobs[1]}};"></view>
   <view class="header">
-    <text class="title" style="color: {{theme.textPrimary}};">隐私协议</text>
+    <text class="title" style="color: {{ui.titleColor}};">隐私协议</text>
   </view>
 
-  <scroll-view class="content" scroll-y>
-    <text class="agreement-text" style="color: {{theme.textSecondary}};">{{agreement}}</text>
+  <scroll-view class="content" scroll-y style="background: {{ui.contentBg}}; box-shadow: {{ui.cardShadow}};">
+    <text class="agreement-text" style="color: {{ui.contentText}};">{{agreement}}</text>
   </scroll-view>
 
   <view class="footer">
-    <view class="btn btn-disagree" bindtap="onDisagree">不同意</view>
+    <view class="btn btn-disagree" bindtap="onDisagree" style="background: {{ui.disagreeBg}}; color: {{ui.disagreeText}};">不同意</view>
     <view class="btn btn-agree" bindtap="onAgree" style="background: linear-gradient(135deg, {{theme.primary}} 0%, {{theme.accent}} 100%);">同意</view>
   </view>
 </view>

@@ -1,10 +1,12 @@
 const app = getApp();
 const { formatGroupTitle } = require('../../utils/util');
 const { getMealTypeInfo, getAllMealTypes } = require('../../utils/meal');
-const { getTimeTheme, applyTabBarTheme, applyNavigationTheme } = require('../../utils/theme');
+const { getActiveTheme, applyTabBarTheme, applyNavigationTheme } = require('../../utils/theme');
+const { pickRandomShareCard } = require('../../utils/share-card');
 
 const REVERSED_MEAL_ORDER = { snack: 1, dinner: 2, lunch: 3, breakfast: 4 };
 const WEEKDAY_LABELS = ['周一', '周二', '周三', '周四', '周五', '周六', '周日'];
+const PAGE_SIZE = 36;
 
 function getDayKey(timestamp) {
   const date = new Date(timestamp);
@@ -24,6 +26,28 @@ function addDays(date, delta) {
   const d = new Date(date);
   d.setDate(d.getDate() + delta);
   return d;
+}
+
+function getWeekRangeWithOffset(weekOffset) {
+  const today = cloneDayStart(new Date());
+  const weekdayOffset = (today.getDay() + 6) % 7;
+  const currentWeekStart = addDays(today, -weekdayOffset);
+  const weekStart = addDays(currentWeekStart, weekOffset * 7);
+  const weekEnd = addDays(weekStart, 7);
+  return {
+    startMs: weekStart.getTime(),
+    endMs: weekEnd.getTime(),
+  };
+}
+
+function getMonthRangeWithOffset(monthOffset) {
+  const now = new Date();
+  const start = new Date(now.getFullYear(), now.getMonth() + monthOffset, 1);
+  const end = new Date(now.getFullYear(), now.getMonth() + monthOffset + 1, 1);
+  return {
+    startMs: start.getTime(),
+    endMs: end.getTime(),
+  };
 }
 
 function formatHm(timestamp) {
@@ -53,10 +77,14 @@ Page({
     showWeekReset: false,
     showMonthReset: false,
     monthSizeClass: 'normal',
-    theme: getTimeTheme(),
+    theme: getActiveTheme(),
+    nextCursor: '',
+    hasMoreRecords: true,
+    isLoadingMore: false,
   },
 
   onLoad: function () {
+    this.loadedRecords = [];
     const system = wx.getSystemInfoSync();
     let monthSizeClass = 'normal';
     if (system.windowWidth <= 360) {
@@ -70,88 +98,180 @@ Page({
       monthSizeClass,
     });
     this.updateTheme();
-    this.loadRecords();
+    this.loadRecords(true);
   },
 
   onShow: function () {
     this.updateTheme();
-    this.loadRecords();
+    if (!this.loadedRecords || this.loadedRecords.length === 0) {
+      this.loadRecords(true);
+    }
   },
 
   onPullDownRefresh: function () {
-    this.loadRecords().then(() => {
+    this.loadRecords(true).then(() => {
       wx.stopPullDownRefresh();
     });
   },
 
   updateTheme: function () {
-    const theme = getTimeTheme();
+    const theme = getActiveTheme();
     this.setData({ theme });
     applyTabBarTheme(theme);
     applyNavigationTheme(theme);
   },
 
-  loadRecords: async function () {
-    this.setData({ isLoading: true });
+  loadRecords: async function (reset = true, options = {}) {
+    if (this.isFetchingPage) return false;
+    this.isFetchingPage = true;
+    const silent = !!options.silent;
+
+    if (reset) {
+      this.setData({
+        isLoading: !silent,
+        isLoadingMore: false,
+      });
+      this.loadedRecords = [];
+    } else if (!silent) {
+      this.setData({ isLoadingMore: true });
+    }
 
     try {
-      const res = await app.request({
-        url: '/api/records',
-        method: 'GET',
-      });
-
-      const rawRecords = res.data || [];
-      const records = rawRecords.map((record) => ({
+      const page = await this.fetchRecordPage(reset ? '' : this.data.nextCursor);
+      const incoming = page.records.map((record) => ({
         ...record,
         mealInfo: getMealTypeInfo(record.mealType),
         formattedTime: formatHm(record.timestamp),
       }));
 
-      const grouped = {};
-      const keys = [];
-      records.forEach((record) => {
-        const groupKey = formatGroupTitle(record.timestamp);
-        if (!grouped[groupKey]) {
-          grouped[groupKey] = [];
-          keys.push(groupKey);
-        }
-        grouped[groupKey].push(record);
-      });
-
-      Object.keys(grouped).forEach((key) => {
-        grouped[key].sort((a, b) => {
-          const orderA = REVERSED_MEAL_ORDER[a.mealType] || 99;
-          const orderB = REVERSED_MEAL_ORDER[b.mealType] || 99;
-          return orderA - orderB;
-        });
-      });
-
-      const map = this.buildDailyStatusMap(records);
-      this.dailyStatusMap = map;
-      const weekViewData = this.buildWeekViewDataWithOffset(map, this.data.weekOffset);
-      const monthViewData = this.buildMonthViewDataWithOffset(map, this.data.monthOffset);
-
+      this.loadedRecords = this.mergeRecords(this.loadedRecords || [], incoming);
       this.setData({
-        records,
-        groupedRecords: grouped,
-        groupKeys: keys,
-        weekLabel: weekViewData.label,
-        weekViewDays: weekViewData.days,
-        monthLabel: monthViewData.label,
-        monthViewDays: monthViewData.days,
-        showWeekReset: this.data.weekOffset !== 0,
-        showMonthReset: this.data.monthOffset !== 0,
-        isLoading: false,
-        currentItemId: records.length > 0 ? records[0].id : null,
+        nextCursor: page.nextCursor || '',
+        hasMoreRecords: !!page.hasMore,
       });
 
-      if (this.data.viewMode === 'day') {
-        setTimeout(() => this.calculateItemPositions(), 80);
+      this.rebuildAllViews();
+      if (reset && !silent && this.data.hasMoreRecords) {
+        setTimeout(() => {
+          this.loadRecords(false, { silent: true });
+        }, 120);
       }
+      return incoming.length > 0;
     } catch (err) {
       console.error('加载记录失败', err);
-      this.setData({ isLoading: false });
+      return false;
+    } finally {
+      this.isFetchingPage = false;
+      this.setData({
+        isLoading: false,
+        isLoadingMore: false,
+      });
     }
+  },
+
+  fetchRecordPage: async function (cursor) {
+    const res = await app.request({
+      url: '/api/records',
+      method: 'GET',
+      data: {
+        limit: PAGE_SIZE,
+        cursor: cursor || '',
+      },
+    });
+
+    if (Array.isArray(res.data)) {
+      return {
+        records: res.data,
+        hasMore: false,
+        nextCursor: '',
+      };
+    }
+    return {
+      records: (res.data && res.data.records) || [],
+      hasMore: !!(res.data && res.data.hasMore),
+      nextCursor: (res.data && res.data.nextCursor) || '',
+    };
+  },
+
+  mergeRecords: function (baseRecords, newRecords) {
+    const mergedMap = new Map();
+    (baseRecords || []).forEach((item) => mergedMap.set(item.id, item));
+    (newRecords || []).forEach((item) => mergedMap.set(item.id, item));
+    return Array.from(mergedMap.values()).sort((a, b) => {
+      if (b.timestamp !== a.timestamp) return b.timestamp - a.timestamp;
+      return b.id > a.id ? 1 : -1;
+    });
+  },
+
+  rebuildAllViews: function () {
+    const records = this.loadedRecords || [];
+    const grouped = {};
+    const keys = [];
+    records.forEach((record) => {
+      const groupKey = formatGroupTitle(record.timestamp);
+      if (!grouped[groupKey]) {
+        grouped[groupKey] = [];
+        keys.push(groupKey);
+      }
+      grouped[groupKey].push(record);
+    });
+
+    Object.keys(grouped).forEach((key) => {
+      grouped[key].sort((a, b) => {
+        const orderA = REVERSED_MEAL_ORDER[a.mealType] || 99;
+        const orderB = REVERSED_MEAL_ORDER[b.mealType] || 99;
+        return orderA - orderB;
+      });
+    });
+
+    const map = this.buildDailyStatusMap(records);
+    this.dailyStatusMap = map;
+    const weekViewData = this.buildWeekViewDataWithOffset(map, this.data.weekOffset);
+    const monthViewData = this.buildMonthViewDataWithOffset(map, this.data.monthOffset);
+
+    this.setData({
+      records,
+      groupedRecords: grouped,
+      groupKeys: keys,
+      weekLabel: weekViewData.label,
+      weekViewDays: weekViewData.days,
+      monthLabel: monthViewData.label,
+      monthViewDays: monthViewData.days,
+      showWeekReset: this.data.weekOffset !== 0,
+      showMonthReset: this.data.monthOffset !== 0,
+      currentItemId: records.length > 0 ? records[0].id : null,
+    });
+
+    if (this.data.viewMode === 'day') {
+      setTimeout(() => this.calculateItemPositions(), 80);
+    }
+  },
+
+  getOldestLoadedTimestamp: function () {
+    const records = this.loadedRecords || [];
+    if (records.length === 0) return null;
+    return records[records.length - 1].timestamp;
+  },
+
+  ensureRangeLoaded: async function (startMs) {
+    let oldest = this.getOldestLoadedTimestamp();
+    let guard = 0;
+    while ((oldest === null || oldest > startMs) && this.data.hasMoreRecords && guard < 10) {
+      const loaded = await this.loadRecords(false, { silent: true });
+      if (!loaded) break;
+      oldest = this.getOldestLoadedTimestamp();
+      guard += 1;
+    }
+  },
+
+  ensureWeekData: async function (weekOffset) {
+    const range = getWeekRangeWithOffset(weekOffset);
+    await this.ensureRangeLoaded(range.startMs);
+  },
+
+  ensureMonthData: async function (monthOffset) {
+    const range = getMonthRangeWithOffset(monthOffset);
+    await this.ensureRangeLoaded(range.startMs);
   },
 
   buildDailyStatusMap: function (records) {
@@ -254,30 +374,43 @@ Page({
     });
   },
 
-  onModeChange: function (e) {
+  onModeChange: async function (e) {
     const { mode } = e.currentTarget.dataset;
     this.setData({ viewMode: mode });
     if (mode === 'day') {
       setTimeout(() => this.calculateItemPositions(), 60);
+      return;
+    }
+    if (mode === 'week') {
+      await this.ensureWeekData(this.data.weekOffset);
+      return;
+    }
+    if (mode === 'month') {
+      await this.ensureMonthData(this.data.monthOffset);
     }
   },
 
-  onPrevPeriod: function () {
+  onPrevPeriod: async function () {
     if (this.data.viewMode === 'week') {
-      this.setData({ weekOffset: this.data.weekOffset - 1 });
+      const targetOffset = this.data.weekOffset - 1;
+      await this.ensureWeekData(targetOffset);
+      this.setData({ weekOffset: targetOffset });
       this.refreshCalendarViews();
       return;
     }
     if (this.data.viewMode === 'month') {
-      this.setData({ monthOffset: this.data.monthOffset - 1 });
+      const targetOffset = this.data.monthOffset - 1;
+      await this.ensureMonthData(targetOffset);
+      this.setData({ monthOffset: targetOffset });
       this.refreshCalendarViews();
     }
   },
 
-  onNextPeriod: function () {
+  onNextPeriod: async function () {
     if (this.data.viewMode === 'week') {
       const next = Math.min(this.data.weekOffset + 1, 0);
       if (next === this.data.weekOffset) return;
+      await this.ensureWeekData(next);
       this.setData({ weekOffset: next });
       this.refreshCalendarViews();
       return;
@@ -285,12 +418,18 @@ Page({
     if (this.data.viewMode === 'month') {
       const next = Math.min(this.data.monthOffset + 1, 0);
       if (next === this.data.monthOffset) return;
+      await this.ensureMonthData(next);
       this.setData({ monthOffset: next });
       this.refreshCalendarViews();
     }
   },
 
-  onBackCurrentPeriod: function () {
+  onBackCurrentPeriod: async function () {
+    if (this.data.viewMode === 'week') {
+      await this.ensureWeekData(0);
+    } else if (this.data.viewMode === 'month') {
+      await this.ensureMonthData(0);
+    }
     this.setData({ weekOffset: 0, monthOffset: 0 });
     this.refreshCalendarViews();
   },
@@ -337,10 +476,18 @@ Page({
     }
   },
 
+  onScrollToLower: function () {
+    if (this.data.viewMode !== 'day') return;
+    if (this.data.isLoadingMore || this.data.isLoading) return;
+    if (!this.data.hasMoreRecords) return;
+    this.loadRecords(false);
+  },
+
   onShareAppMessage: function () {
     return {
       title: '好好吃饭',
       path: '/pages/records/records',
+      imageUrl: pickRandomShareCard(),
     };
   },
 });

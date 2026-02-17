@@ -1,9 +1,20 @@
 .container {
-  position: relative;
+  position: fixed;
+  inset: 0;
   display: flex;
   flex-direction: column;
-  height: 100vh;
+  width: auto;
+  height: auto;
+  box-sizing: border-box;
   overflow: hidden;
+}
+
+.page-bg {
+  position: absolute;
+  left: -8rpx;
+  top: -8rpx;
+  right: -8rpx;
+  bottom: -8rpx;
 }
 
 .bg-blur {
@@ -28,7 +39,7 @@
 }
 
 .header {
-  padding: calc(env(safe-area-inset-top) + 36rpx) 40rpx 24rpx;
+  padding: calc(env(safe-area-inset-top) + 56rpx) 40rpx 22rpx;
   position: relative;
   z-index: 1;
 }
@@ -42,16 +53,22 @@
   position: relative;
   z-index: 1;
   flex: 1;
-  margin: 0 28rpx;
-  padding: 24rpx 28rpx;
-  background: rgba(255, 255, 255, 0.82);
-  border-radius: 28rpx;
+  width: calc(100% - 48rpx);
+  max-width: calc(100% - 48rpx);
+  margin: 0 auto;
+  padding: 30rpx 28rpx;
+  border-radius: 30rpx;
   backdrop-filter: blur(14rpx);
+  border: 0;
+  box-sizing: border-box;
+  overflow: hidden;
+  overflow-x: hidden;
 }
 
 .agreement-text {
-  font-size: 26rpx;
-  line-height: 1.82;
+  font-size: 29rpx;
+  line-height: 1.9;
+  letter-spacing: 0.3rpx;
   white-space: pre-wrap;
 }
 
@@ -59,7 +76,7 @@
   position: relative;
   z-index: 1;
   display: flex;
-  padding: 24rpx 28rpx calc(24rpx + env(safe-area-inset-bottom));
+  padding: 18rpx 24rpx calc(18rpx + env(safe-area-inset-bottom));
   gap: 16rpx;
 }
 
@@ -75,8 +92,7 @@
 }
 
 .btn-disagree {
-  background: rgba(255, 255, 255, 0.75);
-  color: rgba(45, 45, 45, 0.7);
+  backdrop-filter: blur(10rpx);
 }
 
 .btn-agree {

@@ -1,7 +1,8 @@
 const app = getApp();
 const { recognizeMealType, getMealTypeInfo, getAllMealTypes, generateTitle } = require('../../utils/meal');
 const { formatTime } = require('../../utils/util');
-const { TIME_THEMES, getTimeTheme, getThemeList, applyTabBarTheme } = require('../../utils/theme');
+const { TIME_THEMES, getActiveTheme, getThemeList, setManualThemeKey, applyTabBarTheme } = require('../../utils/theme');
+const { pickRandomShareCard } = require('../../utils/share-card');
 
 const themeList = getThemeList();
 
@@ -73,7 +74,7 @@ Page({
   },
 
   updateTheme: function() {
-    const theme = getTimeTheme();
+    const theme = getActiveTheme();
     this.setData({ theme });
     applyTabBarTheme(theme);
   },
@@ -84,12 +85,14 @@ Page({
     const nextIndex = (currentIndex + 1) % keys.length;
     const nextKey = keys[nextIndex];
     const theme = { key: nextKey, ...TIME_THEMES[nextKey] };
+    setManualThemeKey(nextKey);
     this.setData({ theme });
     applyTabBarTheme(theme);
   },
 
   setTheme: function(e) {
     const key = e.currentTarget.dataset.key;
+    setManualThemeKey(key);
     const theme = { key, ...TIME_THEMES[key] };
     this.setData({ theme });
     applyTabBarTheme(theme);
@@ -808,11 +811,13 @@ Page({
       return {
         title: title || '好好吃饭',
         path: sharePath,
+        imageUrl: pickRandomShareCard(),
       };
     }
     return {
       title: '好好吃饭',
       path: '/pages/index/index',
+      imageUrl: pickRandomShareCard(),
     };
   },
 
@@ -823,11 +828,13 @@ Page({
       return {
         title: res.target.dataset.title || '好好吃饭',
         query: shareid ? `shareId=${shareid}` : `id=${id}`,
+        imageUrl: pickRandomShareCard(),
       };
     }
     return {
       title: '好好吃饭',
       query: '',
+      imageUrl: pickRandomShareCard(),
     };
   },
 });

@@ -1,9 +1,32 @@
 const app = getApp();
-const { getTimeTheme, applyTabBarTheme } = require('../../utils/theme');
+const { getActiveTheme, applyTabBarTheme } = require('../../utils/theme');
+
+function buildPrivacyUi(theme) {
+  const isDark = theme && theme.key === 'night';
+  if (isDark) {
+    return {
+      titleColor: '#F2F5FF',
+      contentBg: 'rgba(255, 255, 255, 0.95)',
+      contentText: '#2E3140',
+      cardShadow: '0 14rpx 36rpx rgba(9, 13, 40, 0.22)',
+      disagreeBg: 'rgba(255,255,255,0.84)',
+      disagreeText: '#42475A',
+    };
+  }
+  return {
+    titleColor: theme.textPrimary,
+    contentBg: 'rgba(255, 255, 255, 0.9)',
+    contentText: '#45454F',
+    cardShadow: '0 12rpx 28rpx rgba(30, 34, 60, 0.08)',
+    disagreeBg: 'rgba(255,255,255,0.84)',
+    disagreeText: '#4C4F5E',
+  };
+}
 
 Page({
   data: {
-    theme: getTimeTheme(),
+    theme: getActiveTheme(),
+    ui: buildPrivacyUi(getActiveTheme()),
     agreement: `
       隐私协议
 
@@ -42,8 +65,11 @@ Page({
   },
 
   updateTheme: function () {
-    const theme = getTimeTheme();
-    this.setData({ theme });
+    const theme = getActiveTheme();
+    this.setData({
+      theme,
+      ui: buildPrivacyUi(theme),
+    });
     applyTabBarTheme(theme);
   },
 

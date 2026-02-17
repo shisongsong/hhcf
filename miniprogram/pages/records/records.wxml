@@ -10,7 +10,7 @@
     <view class="mode-btn {{viewMode === 'month' ? 'active' : ''}}" data-mode="month" bindtap="onModeChange" style="{{viewMode === 'month' ? 'background:' + theme.accent + ';color:#fff;' : ''}}">月视图</view>
   </view>
 
-  <scroll-view class="timeline" scroll-y enhanced show-scrollbar="{{false}}" bindscroll="onScroll">
+  <scroll-view class="timeline" scroll-y enhanced show-scrollbar="{{false}}" bindscroll="onScroll" bindscrolltolower="onScrollToLower" lower-threshold="180">
     <view wx:if="{{records.length > 0}}">
       <view class="timeline-list" wx:if="{{viewMode === 'day'}}">
         <block wx:for="{{groupKeys}}" wx:key="index">
@@ -40,6 +40,10 @@
             </view>
           </view>
         </block>
+        <view class="list-status" wx:if="{{records.length > 0}}">
+          <text wx:if="{{isLoadingMore}}">加载更多中...</text>
+          <text wx:elif="{{!hasMoreRecords}}">没有更多记录了</text>
+        </view>
       </view>
 
       <view class="week-view" wx:elif="{{viewMode === 'week'}}">
