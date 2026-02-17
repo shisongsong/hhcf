@@ -2,7 +2,29 @@
   display: flex;
   flex-direction: column;
   height: 100vh;
-  background: var(--bg-page);
+  position: relative;
+  overflow: hidden;
+}
+
+.preview-bg {
+  position: absolute;
+  border-radius: 50%;
+  filter: blur(72rpx);
+  opacity: 0.32;
+}
+
+.preview-bg-1 {
+  width: 360rpx;
+  height: 360rpx;
+  right: -120rpx;
+  top: -140rpx;
+}
+
+.preview-bg-2 {
+  width: 280rpx;
+  height: 280rpx;
+  left: -80rpx;
+  bottom: 210rpx;
 }
 
 /* 顶部导航 */
@@ -16,6 +38,7 @@
   position: sticky;
   top: 0;
   z-index: 10;
+  backdrop-filter: blur(12rpx);
 }
 
 .back-btn {
@@ -62,6 +85,7 @@
   align-items: center;
   justify-content: center;
   position: relative;
+  z-index: 1;
 }
 
 .image-grid {
@@ -173,8 +197,10 @@
 /* 餐别选择器 */
 .selector-section {
   padding: 20rpx 32rpx;
-  background: var(--bg-card);
   margin-top: 2rpx;
+  position: relative;
+  z-index: 1;
+  backdrop-filter: blur(12rpx);
 }
 
 .section-label {
@@ -202,7 +228,7 @@
   align-items: center;
   padding: 16rpx 24rpx;
   border-radius: 20rpx;
-  background: #F8F6F3;
+  background: var(--inactive-bg, #F8F6F3);
   transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
   min-width: 140rpx;
 }
@@ -240,8 +266,10 @@
 /* 标题编辑 */
 .title-section {
   padding: 20rpx 32rpx;
-  background: var(--bg-card);
   margin-top: 2rpx;
+  position: relative;
+  z-index: 1;
+  backdrop-filter: blur(12rpx);
 }
 
 .title-bar {
@@ -283,8 +311,10 @@
   display: flex;
   padding: 20rpx 32rpx;
   padding-bottom: calc(20rpx + env(safe-area-inset-bottom));
-  background: var(--bg-card);
   gap: 16rpx;
+  position: relative;
+  z-index: 1;
+  backdrop-filter: blur(12rpx);
 }
 
 .btn {

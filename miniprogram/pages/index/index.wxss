@@ -674,6 +674,7 @@ button.popup-action-btn::after {
   height: 560rpx;
   border-radius: 24rpx;
   overflow: hidden;
+  background: #111;
   box-shadow: 0 0 0 2000rpx rgba(0, 0, 0, 0.45);
 }
 
@@ -714,13 +715,14 @@ button.popup-action-btn::after {
 }
 
 .camera-bottom-panel {
-  padding: 8rpx 24rpx calc(32rpx + env(safe-area-inset-bottom));
+  padding: 4rpx 24rpx calc(20rpx + env(safe-area-inset-bottom));
   background: linear-gradient(0deg, rgba(0,0,0,0.88) 0%, rgba(0,0,0,0.55) 55%, rgba(0,0,0,0) 100%);
   backdrop-filter: blur(10rpx);
 }
 
 .photo-thumbnail-list {
-  padding: 0 0 16rpx;
+  min-height: 104rpx;
+  padding: 0 0 10rpx;
 }
 
 .thumbnail-scroll {
@@ -737,15 +739,14 @@ button.popup-action-btn::after {
   margin-right: 16rpx;
   border-radius: 16rpx;
   overflow: hidden;
-  border: 4rpx solid rgba(255,255,255,0.3);
+  border: none;
   flex-shrink: 0;
   transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow: 0 4rpx 12rpx rgba(0, 0, 0, 0.25);
 }
 
-.thumbnail-item.active {
-  border-color: #FF8C42;
-  transform: scale(1.08);
-  box-shadow: 0 8rpx 24rpx rgba(255, 140, 66, 0.4);
+.thumbnail-item:active {
+  transform: scale(0.97);
 }
 
 .thumbnail-img {
@@ -777,19 +778,19 @@ button.popup-action-btn::after {
   display: flex;
   align-items: center;
   justify-content: space-around;
-  margin-top: 18rpx;
+  margin-top: 12rpx;
 }
 
 .control-btn {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 10rpx;
+  gap: 6rpx;
 }
 
 .control-icon-wrapper {
-  width: 96rpx;
-  height: 96rpx;
+  width: 90rpx;
+  height: 90rpx;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -810,7 +811,7 @@ button.popup-action-btn::after {
 
 .control-label {
   color: rgba(255,255,255,0.8);
-  font-size: 22rpx;
+  font-size: 20rpx;
   font-weight: 500;
 }
 
@@ -823,8 +824,8 @@ button.popup-action-btn::after {
 }
 
 .capture-btn {
-  width: 144rpx;
-  height: 144rpx;
+  width: 136rpx;
+  height: 136rpx;
   border-radius: 50%;
   background: rgba(255,255,255,0.2);
   display: flex;
@@ -838,8 +839,8 @@ button.popup-action-btn::after {
 }
 
 .capture-inner {
-  width: 112rpx;
-  height: 112rpx;
+  width: 104rpx;
+  height: 104rpx;
   border-radius: 50%;
   background: #fff;
   box-shadow: 0 4rpx 20rpx rgba(0, 0, 0, 0.3);
@@ -850,44 +851,56 @@ button.popup-action-btn::after {
 }
 
 .camera-meal-section {
-  margin-top: 6rpx;
+  margin-top: 2rpx;
+  overflow: visible;
 }
 
 .camera-section-title {
   display: block;
-  font-size: 22rpx;
+  font-size: 20rpx;
   font-weight: 600;
   color: rgba(255,255,255,0.6);
   text-transform: uppercase;
   letter-spacing: 2rpx;
-  margin-bottom: 12rpx;
+  margin-bottom: 8rpx;
 }
 
 .camera-meal-scroll {
   width: 100%;
+  padding-top: 4rpx;
+  overflow: visible;
 }
 
 .camera-meal-list {
   display: flex;
-  gap: 14rpx;
+  gap: 16rpx;
+  justify-content: center;
+  align-items: flex-start;
+  width: 100%;
+  max-width: 560rpx;
+  margin: 0 auto;
+  overflow: visible;
 }
 
 .camera-meal-item {
   display: flex;
   flex-direction: column;
   align-items: center;
-  padding: 14rpx 22rpx;
-  border-radius: 18rpx;
-  background: rgba(255,255,255,0.08);
+  padding: 0 2rpx;
+  border-radius: 0;
+  background: transparent;
   transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
-  min-width: 120rpx;
+  min-width: 92rpx;
 }
 
 .camera-meal-item.selected {
-  background: rgba(255,255,255,0.18);
-  transform: translateY(-4rpx);
-  box-shadow: 0 10rpx 26rpx rgba(0, 0, 0, 0.25), 0 0 0 2rpx rgba(255,255,255,0.15), 0 0 18rpx var(--active-color, rgba(255,140,66,0.4));
-  animation: mealSelectPop 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+  background: transparent;
+}
+
+.camera-meal-item.selected .camera-meal-icon {
+  transform: translateY(-3rpx) scale(1.08);
+  box-shadow: 0 10rpx 26rpx rgba(0, 0, 0, 0.25), 0 0 16rpx var(--active-color, rgba(255,140,66,0.4));
+  animation: mealSelectPop 0.35s cubic-bezier(0.34, 1.56, 0.64, 1);
 }
 
 .camera-meal-icon {
@@ -897,7 +910,7 @@ button.popup-action-btn::after {
   display: flex;
   align-items: center;
   justify-content: center;
-  margin-bottom: 8rpx;
+  margin-bottom: 6rpx;
   transition: all 0.25s ease;
 }
 
@@ -906,7 +919,7 @@ button.popup-action-btn::after {
 }
 
 .camera-meal-label {
-  font-size: 24rpx;
+  font-size: 22rpx;
   font-weight: 500;
   color: rgba(255,255,255,0.7);
 }
@@ -916,27 +929,27 @@ button.popup-action-btn::after {
 }
 
 @keyframes mealSelectPop {
-  0% { transform: translateY(0) scale(0.96); }
-  60% { transform: translateY(-6rpx) scale(1.05); }
-  100% { transform: translateY(-4rpx) scale(1); }
+  0% { transform: translateY(0) scale(0.92); }
+  60% { transform: translateY(-6rpx) scale(1.12); }
+  100% { transform: translateY(-4rpx) scale(1.08); }
 }
 
 .camera-title-section {
-  margin-top: 18rpx;
+  margin-top: 10rpx;
 }
 
 .camera-title-bar {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 18rpx 22rpx;
+  padding: 14rpx 18rpx;
   background: rgba(255,255,255,0.08);
-  border-radius: 18rpx;
+  border-radius: 16rpx;
   border: 1rpx solid rgba(255,255,255,0.08);
 }
 
 .camera-title-text {
-  font-size: 28rpx;
+  font-size: 26rpx;
   color: #fff;
   font-weight: 500;
 }

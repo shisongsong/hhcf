@@ -1,10 +1,12 @@
-<view class="container">
+<view class="container" style="background: linear-gradient(180deg, {{theme.bgGradient[0]}} 0%, {{theme.bgGradient[1]}} 55%, {{theme.bgGradient[2]}} 100%);">
+  <view class="preview-bg preview-bg-1" style="background: {{theme.blobs[0]}};"></view>
+  <view class="preview-bg preview-bg-2" style="background: {{theme.blobs[1]}};"></view>
   <!-- 顶部导航 -->
-  <view class="header">
+  <view class="header" style="background: rgba(255,255,255,0.78);">
     <view class="back-btn" bindtap="onBack">
       <view class="back-arrow"></view>
     </view>
-    <text class="header-title">{{mealTypeInfo.label}}打卡</text>
+    <text class="header-title" style="color: {{theme.textPrimary}};">{{mealTypeInfo.label}}打卡</text>
     <view class="header-placeholder"></view>
   </view>
 
@@ -37,31 +39,31 @@
   </view>
 
   <!-- 餐别选择器 -->
-  <view class="selector-section">
-    <text class="section-label">选择餐别</text>
+  <view class="selector-section" style="background: rgba(255,255,255,0.82);">
+    <text class="section-label" style="color: {{theme.textSecondary}};">选择餐别</text>
     <scroll-view scroll-x class="meal-scroll" enhanced show-scrollbar="{{false}}">
       <view class="meal-options">
         <view
           wx:for="{{mealTypes}}"
           wx:key="key"
           class="meal-item {{mealType === item.key ? 'active' : ''}}"
-          style="{{mealType === item.key ? '--active-color:' + item.color : ''}}"
+          style="{{mealType === item.key ? '--active-color:' + item.color : '--inactive-bg:rgba(255,255,255,0.68);'}}"
           bindtap="onMealTypeChange"
           data-key="{{item.key}}"
         >
           <view class="meal-icon-wrapper" style="background: {{mealType === item.key ? item.color : '#F5F3F0'}};">
             <text class="meal-emoji">{{item.emoji}}</text>
           </view>
-          <text class="meal-name" style="color: {{mealType === item.key ? item.color : '#6B6B6B'}};">{{item.label}}</text>
+          <text class="meal-name" style="color: {{mealType === item.key ? item.color : theme.textSecondary}};">{{item.label}}</text>
         </view>
       </view>
     </scroll-view>
   </view>
 
   <!-- 标题编辑 -->
-  <view class="title-section">
-    <text class="section-label">标题</text>
-    <view class="title-bar" bindtap="onTitleTap">
+  <view class="title-section" style="background: rgba(255,255,255,0.82);">
+    <text class="section-label" style="color: {{theme.textSecondary}};">标题</text>
+    <view class="title-bar" bindtap="onTitleTap" style="background: rgba(255,255,255,0.72);">
       <text class="title-text">{{title}}</text>
       <view class="edit-indicator">
         <text>编辑</text>
@@ -71,11 +73,11 @@
   </view>
 
   <!-- 底部操作栏 -->
-  <view class="action-bar">
+  <view class="action-bar" style="background: rgba(255,255,255,0.86);">
     <view class="btn btn-back" bindtap="onBack">
       <text>返回修改</text>
     </view>
-    <view class="btn btn-confirm {{isUploading ? 'disabled' : ''}}" bindtap="onConfirm">
+    <view class="btn btn-confirm {{isUploading ? 'disabled' : ''}}" bindtap="onConfirm" style="background: linear-gradient(135deg, {{theme.primary}} 0%, {{theme.accent}} 100%);">
       <text>{{imageUrls.length > 0 ? '✓ 保存' : '保存记录'}}</text>
     </view>
   </view>

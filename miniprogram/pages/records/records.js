@@ -1,64 +1,10 @@
 const app = getApp();
 const { formatGroupTitle } = require('../../utils/util');
 const { getMealTypeInfo, getAllMealTypes } = require('../../utils/meal');
+const { getTimeTheme, applyTabBarTheme, applyNavigationTheme } = require('../../utils/theme');
 
 const REVERSED_MEAL_ORDER = { snack: 1, dinner: 2, lunch: 3, breakfast: 4 };
 const WEEKDAY_LABELS = ['周一', '周二', '周三', '周四', '周五', '周六', '周日'];
-
-const TIME_THEMES = {
-  dawn: {
-    hour: [5, 6, 7],
-    bgGradient: ['#F5E6E8', '#FCEAEC', '#FFE4D6'],
-    textPrimary: '#4A3040',
-    textSecondary: '#7A6570',
-    accent: '#C45C69',
-  },
-  morning: {
-    hour: [8, 9, 10, 11],
-    bgGradient: ['#FFF5E6', '#FFE8CC', '#FFDAB3'],
-    textPrimary: '#4A3828',
-    textSecondary: '#7A6558',
-    accent: '#D4924A',
-  },
-  noon: {
-    hour: [12, 13, 14],
-    bgGradient: ['#FFFEF5', '#FFF8DC', '#FFF3CD'],
-    textPrimary: '#4A4230',
-    textSecondary: '#7A7058',
-    accent: '#D4A84A',
-  },
-  afternoon: {
-    hour: [15, 16, 17],
-    bgGradient: ['#E8F4F8', '#DCE8F0', '#D0DCE8'],
-    textPrimary: '#303A40',
-    textSecondary: '#586870',
-    accent: '#5B8BA0',
-  },
-  sunset: {
-    hour: [18, 19, 20],
-    bgGradient: ['#FFE8E8', '#FFD8D0', '#FFC8B8'],
-    textPrimary: '#4A3030',
-    textSecondary: '#7A5858',
-    accent: '#D4605A',
-  },
-  night: {
-    hour: [21, 22, 23, 0, 1, 2, 3, 4],
-    bgGradient: ['#1A1A2E', '#16213E', '#0F3460'],
-    textPrimary: '#E8E8F0',
-    textSecondary: '#B8B8C8',
-    accent: '#7B68EE',
-  },
-};
-
-function getTimeTheme() {
-  const hour = new Date().getHours();
-  for (const key in TIME_THEMES) {
-    if (TIME_THEMES[key].hour.includes(hour)) {
-      return TIME_THEMES[key];
-    }
-  }
-  return TIME_THEMES.morning;
-}
 
 function getDayKey(timestamp) {
   const date = new Date(timestamp);
@@ -139,7 +85,10 @@ Page({
   },
 
   updateTheme: function () {
-    this.setData({ theme: getTimeTheme() });
+    const theme = getTimeTheme();
+    this.setData({ theme });
+    applyTabBarTheme(theme);
+    applyNavigationTheme(theme);
   },
 
   loadRecords: async function () {

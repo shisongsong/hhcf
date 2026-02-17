@@ -139,7 +139,7 @@
             class="adjust-image" 
             src="{{cameraPhotos[adjustPhotoIndex]}}"
             mode="aspectFill"
-            style="transform: scale({{adjustScale}}) translate({{adjustX}}px, {{adjustY}}px);"
+            style="transform: translate({{adjustX}}px, {{adjustY}}px) scale({{adjustScale}});"
             bindtouchstart="onTouchAdjustStart"
             bindtouchmove="onTouchAdjustMove"
             bindtouchend="onTouchAdjustEnd"
@@ -167,13 +167,12 @@
 
     <!-- 取景框 -->
     <view class="camera-viewfinder" wx:if="{{showCameraPopup}}">
-      <camera 
-        device-position="back" 
-        flash="off" 
-        class="camera-element"
-        wx:if="{{!isAdjustingPhoto}}"
-      ></camera>
       <view class="viewfinder-frame" wx:if="{{!isAdjustingPhoto}}">
+        <camera 
+          device-position="back" 
+          flash="off" 
+          class="camera-element"
+        ></camera>
         <view class="frame-corner tl"></view>
         <view class="frame-corner tr"></view>
         <view class="frame-corner bl"></view>
@@ -184,12 +183,12 @@
     <!-- 底部面板 -->
     <view class="camera-bottom-panel">
       <!-- 照片预览 - 横向排列 -->
-      <view class="photo-thumbnail-list" wx:if="{{cameraPhotos.length > 0}}">
+      <view class="photo-thumbnail-list">
         <scroll-view scroll-x class="thumbnail-scroll" enhanced show-scrollbar="{{false}}">
           <view 
             wx:for="{{cameraPhotos}}" 
             wx:key="index"
-            class="thumbnail-item {{currentCameraIndex === index ? 'active' : ''}}"
+            class="thumbnail-item"
           >
             <image class="thumbnail-img" src="{{item}}" mode="aspectFill" bindtap="onStartAdjustPhoto" data-index="{{index}}"></image>
             <view class="thumbnail-delete" catchtap="onDeletePhoto" data-index="{{index}}">✕</view>
@@ -200,7 +199,7 @@
       <!-- 餐别选择 -->
       <view class="camera-meal-section">
         <text class="camera-section-title">选择餐别</text>
-        <scroll-view scroll-x class="camera-meal-scroll" enhanced show-scrollbar="{{false}}">
+        <view class="camera-meal-scroll">
           <view class="camera-meal-list">
             <view 
               wx:for="{{cameraMealTypes}}" 
@@ -216,7 +215,7 @@
               <text class="camera-meal-label">{{item.label}}</text>
             </view>
           </view>
-        </scroll-view>
+        </view>
       </view>
 
       <!-- 标题 -->

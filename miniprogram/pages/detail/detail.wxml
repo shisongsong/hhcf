@@ -1,64 +1,111 @@
-<view class="container" wx:if="{{record}}">
-  <!-- 动态背景 -->
+<view class="container" wx:if="{{record}}" style="background: linear-gradient(180deg, {{theme.bgGradient[0]}} 0%, {{theme.bgGradient[1]}} 54%, {{theme.bgGradient[2]}} 100%);">
   <view class="dynamic-bg">
-    <view class="bg-gradient"></view>
-    <view class="decorations">
-      <view class="blob blob-1"></view>
-      <view class="blob blob-2"></view>
-      <view class="blob blob-3"></view>
-    </view>
+    <view class="blob blob-1" style="background: {{theme.blobs[0]}};"></view>
+    <view class="blob blob-2" style="background: {{theme.blobs[1]}};"></view>
+    <view class="blob blob-3" style="background: {{theme.blobs[2]}};"></view>
+    <text class="bg-emoji">{{theme.emoji}}</text>
   </view>
 
-  <!-- 图片轮播 -->
-  <swiper 
-    class="image-swiper"
-    current="{{currentImageIndex}}"
-    bindchange="onSwiperChange"
-    circular="false"
-    indicator-dots="false"
-    duration="300"
-  >
-    <swiper-item wx:for="{{record.imageUrl}}" wx:key="index">
-      <view class="swiper-item-content">
-        <image class="swiper-image" src="{{item}}" mode="aspectFill"></image>
-      </view>
-    </swiper-item>
-  </swiper>
-
-  <!-- 底部信息栏 -->
-  <view class="bottom-bar">
-    <view class="bottom-content">
-      <view class="meal-info">
-        <view class="meal-tag" style="background: linear-gradient(135deg, {{mealTypeInfo.color}} 0%, {{mealTypeInfo.color}}CC 100%);">
-          <text class="meal-emoji">{{mealTypeInfo.emoji}}</text>
-          <text class="meal-label">{{mealTypeInfo.label}}</text>
+  <scroll-view class="content-scroll" scroll-y enhanced show-scrollbar="{{false}}">
+    <view class="detail-card">
+      <view class="card-header">
+        <view class="meal-tag" style="background: linear-gradient(135deg, {{mealTypeInfo.color}} 0%, {{mealTypeInfo.color}}D8 100%);">
+          <text class="meal-tag-text">{{mealTypeInfo.emoji}} {{mealTypeInfo.label}}</text>
         </view>
+        <text class="time-text" style="color: {{theme.textSecondary}};">{{formattedTime.time}}</text>
       </view>
-      <view class="page-indicator">
-        <text>{{currentImageIndex + 1}} / {{record.imageUrl.length}}</text>
+
+      <text class="record-title" style="color: {{theme.textPrimary}};">{{record.title}}</text>
+      <text class="record-subtitle" style="color: {{theme.textSecondary}};">{{formattedTime.full}}</text>
+
+      <swiper
+        class="photo-swiper"
+        current="{{currentImageIndex}}"
+        bindchange="onSwiperChange"
+        indicator-dots="false"
+        circular="false"
+      >
+        <swiper-item wx:for="{{record.imageUrl}}" wx:key="index">
+          <view class="photo-swiper-item">
+            <image class="photo-image" src="{{item}}" mode="aspectFill" bindtap="onImagePreview" data-index="{{index}}"></image>
+          </view>
+        </swiper-item>
+      </swiper>
+
+      <view class="dot-indicator" wx:if="{{record.imageUrl.length > 1}}">
+        <view wx:for="{{record.imageUrl}}" wx:key="index" class="dot {{currentImageIndex === index ? 'active' : ''}}" style="{{currentImageIndex === index ? 'background:' + mealTypeInfo.color + ';' : ''}}"></view>
       </view>
-      <view class="menu-btn" bindtap="onMoreTap">
-        <text class="menu-icon">•••</text>
+    </view>
+
+    <view class="meta-card">
+      <view class="meta-item">
+        <text class="meta-label">图片数量</text>
+        <text class="meta-value">{{record.imageUrl.length}} 张</text>
       </view>
+      <view class="meta-item">
+        <text class="meta-label">记录日期</text>
+        <text class="meta-value">{{formattedTime.displayDate}}</text>
+      </view>
+      <view class="meta-item">
+        <text class="meta-label">访问模式</text>
+        <text class="meta-value">{{isSharedView ? '分享访问' : '我的记录'}}</text>
+      </view>
+    </view>
+
+    <view class="action-card">
+      <view class="action-btn action-generate" wx:if="{{isOwner}}" bindtap="onOpenPosterSheet" style="background: linear-gradient(135deg, {{theme.primary}} 0%, {{theme.accent}} 100%);">生成海报</view>
+      <button
+        class="action-btn action-share"
+        open-type="share"
+        data-id="{{record.id}}"
+        data-shareid="{{record.shareId}}"
+        data-title="{{record.title}}"
+      >分享好友</button>
+      <view class="action-btn action-delete" wx:if="{{isOwner}}" bindtap="onDeleteTap">删除记录</view>
+    </view>
+  </scroll-view>
+
+  <view class="sheet-mask {{showPosterSheet ? 'show' : ''}}" bindtap="onClosePosterSheet"></view>
+  <view class="poster-sheet {{showPosterSheet ? 'show' : ''}}">
+    <view class="sheet-header">
+      <text class="sheet-title">选择海报模板</text>
+      <text class="sheet-subtitle">支持多图展示，先预览再保存</text>
+    </view>
+    <view class="style-list">
+      <view
+        wx:for="{{posterStyles}}"
+        wx:key="key"
+        class="style-item {{currentPosterStyle === item.key ? 'active' : ''}}"
+        bindtap="onPosterStyleTap"
+        data-key="{{item.key}}"
+        style="{{currentPosterStyle === item.key ? 'border-color:' + theme.accent + ';' : ''}}"
+      >
+        <text class="style-name">{{item.name}}</text>
+        <text class="style-desc">{{item.desc}}</text>
+      </view>
+    </view>
+    <view class="sheet-actions">
+      <view class="sheet-btn cancel" bindtap="onClosePosterSheet">取消</view>
+      <view class="sheet-btn confirm" bindtap="onGeneratePoster" style="background: linear-gradient(135deg, {{theme.primary}} 0%, {{theme.accent}} 100%);">{{isGeneratingPoster ? '生成中...' : '预览海报'}}</view>
     </view>
   </view>
 
-  <!-- 操作菜单 -->
-  <view class="action-sheet-mask {{showActionSheet ? 'show' : ''}}" bindtap="onCloseActionSheet"></view>
-  <view class="action-sheet {{showActionSheet ? 'show' : ''}}">
-    <view class="sheet-item" bindtap="onSavePoster" wx:if="{{isOwner}}">
-      <text class="sheet-icon">🖼️</text>
-      <text class="sheet-text">保存海报</text>
+  <view class="sheet-mask {{showPosterPreview ? 'show' : ''}}" bindtap="onClosePosterPreview"></view>
+  <view class="poster-preview {{showPosterPreview ? 'show' : ''}}">
+    <view class="preview-header">
+      <text class="preview-title">海报预览</text>
+      <text class="preview-hint">确认后再保存到相册</text>
     </view>
-    <view class="sheet-item" bindtap="onDeleteTap" wx:if="{{isOwner}}">
-      <text class="sheet-icon" style="color: #FF6B6B;">🗑️</text>
-      <text class="sheet-text" style="color: #FF6B6B;">删除记录</text>
+    <view class="preview-image-wrap">
+      <image class="preview-image" src="{{posterPreviewPath}}" mode="widthFix"></image>
     </view>
-    <view class="sheet-cancel" bindtap="onCloseActionSheet">取消</view>
+    <view class="preview-actions">
+      <view class="sheet-btn cancel" bindtap="onBackToStyleSheet">换个模板</view>
+      <view class="sheet-btn confirm" bindtap="onSavePosterPreview" style="background: linear-gradient(135deg, {{theme.primary}} 0%, {{theme.accent}} 100%);">保存到相册</view>
+    </view>
   </view>
 
-  <!-- 海报画布 -->
   <view class="poster-canvas-container">
-    <canvas type="2d" id="posterCanvas" style="width: 320px; height: 480px;"></canvas>
+    <canvas type="2d" id="posterCanvas" style="width: 360px; height: 740px;"></canvas>
   </view>
 </view>

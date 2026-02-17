@@ -1,8 +1,10 @@
 const { getMealTypeInfo, generateTitle, getAllMealTypes } = require('../../utils/meal');
 const app = getApp();
+const { getTimeTheme, applyTabBarTheme } = require('../../utils/theme');
 
 Page({
   data: {
+    theme: getTimeTheme(),
     imagePaths: [],
     imageUrls: [],
     timestamp: 0,
@@ -17,6 +19,7 @@ Page({
   },
 
   onLoad: function (options) {
+    this.updateTheme();
     const { imagePaths, timestamp, mealType } = options;
     const decodedImagePaths = JSON.parse(decodeURIComponent(imagePaths));
     const mealTypeInfo = getMealTypeInfo(mealType);
@@ -37,6 +40,16 @@ Page({
     });
 
     this.uploadImages();
+  },
+
+  onShow: function () {
+    this.updateTheme();
+  },
+
+  updateTheme: function () {
+    const theme = getTimeTheme();
+    this.setData({ theme });
+    applyTabBarTheme(theme);
   },
 
   uploadImages: function () {

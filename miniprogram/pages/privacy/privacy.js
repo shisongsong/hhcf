@@ -1,7 +1,9 @@
 const app = getApp();
+const { getTimeTheme, applyTabBarTheme } = require('../../utils/theme');
 
 Page({
   data: {
+    theme: getTimeTheme(),
     agreement: `
       隐私协议
 
@@ -29,6 +31,20 @@ Page({
 
       点击「同意」即表示您已阅读并同意本协议。
     `,
+  },
+
+  onLoad: function () {
+    this.updateTheme();
+  },
+
+  onShow: function () {
+    this.updateTheme();
+  },
+
+  updateTheme: function () {
+    const theme = getTimeTheme();
+    this.setData({ theme });
+    applyTabBarTheme(theme);
   },
 
   onDisagree: function () {

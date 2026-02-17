@@ -1,96 +1,9 @@
 const app = getApp();
 const { recognizeMealType, getMealTypeInfo, getAllMealTypes, generateTitle } = require('../../utils/meal');
 const { formatTime } = require('../../utils/util');
+const { TIME_THEMES, getTimeTheme, getThemeList, applyTabBarTheme } = require('../../utils/theme');
 
-const TIME_THEMES = {
-  dawn: {
-    name: '清晨',
-    hour: [5, 6, 7],
-    bgGradient: ['#F5E6E8', '#FCEAEC', '#FFE4D6'],
-    primary: '#C45C69',
-    accent: '#A84858',
-    textPrimary: '#4A3040',
-    textSecondary: '#7A6570',
-    emoji: '🌅',
-    blobs: ['#E8C4C8', '#D4A4B0', '#C48490'],
-    greeting: '早安，新的一天',
-  },
-  morning: {
-    name: '上午',
-    hour: [8, 9, 10, 11],
-    bgGradient: ['#FFF5E6', '#FFE8CC', '#FFDAB3'],
-    primary: '#D4924A',
-    accent: '#C48232',
-    textPrimary: '#4A3828',
-    textSecondary: '#7A6558',
-    emoji: '☀️',
-    blobs: ['#E8D4B8', '#D4C0A0', '#C4AC88'],
-    greeting: '早上好呀',
-  },
-  noon: {
-    name: '正午',
-    hour: [12, 13, 14],
-    bgGradient: ['#FFFEF5', '#FFF8DC', '#FFF3CD'],
-    primary: '#D4A84A',
-    accent: '#C49832',
-    textPrimary: '#4A4230',
-    textSecondary: '#7A7058',
-    emoji: '🌤️',
-    blobs: ['#E8DCA8', '#D4C890', '#C4B478'],
-    greeting: '午餐时间到',
-  },
-  afternoon: {
-    name: '下午',
-    hour: [15, 16, 17],
-    bgGradient: ['#E8F4F8', '#DCE8F0', '#D0DCE8'],
-    primary: '#5B8BA0',
-    accent: '#4A7A8C',
-    textPrimary: '#303A40',
-    textSecondary: '#586870',
-    emoji: '🌇',
-    blobs: ['#B8D0E0', '#A0C0D0', '#88B0C0'],
-    greeting: '下午好',
-  },
-  sunset: {
-    name: '黄昏',
-    hour: [18, 19, 20],
-    bgGradient: ['#FFE8E8', '#FFD8D0', '#FFC8B8'],
-    primary: '#D4605A',
-    accent: '#C44848',
-    textPrimary: '#4A3030',
-    textSecondary: '#7A5858',
-    emoji: '🌆',
-    blobs: ['#E8B8B0', '#D4A098', '#C48880'],
-    greeting: '黄昏时刻',
-  },
-  night: {
-    name: '夜晚',
-    hour: [21, 22, 23, 0, 1, 2, 3, 4],
-    bgGradient: ['#1A1A2E', '#16213E', '#0F3460'],
-    primary: '#7B68EE',
-    accent: '#6A5ACD',
-    textPrimary: '#E8E8F0',
-    textSecondary: '#B8B8C8',
-    emoji: '🌙',
-    blobs: ['#2D2D50', '#4B4B80', '#5B5B90'],
-    greeting: '夜深了',
-  },
-};
-
-function getTimeTheme() {
-  const hour = new Date().getHours();
-  for (const key in TIME_THEMES) {
-    if (TIME_THEMES[key].hour.includes(hour)) {
-      return { key, ...TIME_THEMES[key] };
-    }
-  }
-  return { key: 'morning', ...TIME_THEMES.morning };
-}
-
-const themeList = Object.entries(TIME_THEMES).map(([key, value]) => ({
-  key,
-  ...value
-}));
+const themeList = getThemeList();
 
 Page({
   data: {
@@ -162,6 +75,7 @@ Page({
   updateTheme: function() {
     const theme = getTimeTheme();
     this.setData({ theme });
+    applyTabBarTheme(theme);
   },
 
   toggleTheme: function() {
@@ -169,19 +83,20 @@ Page({
     const currentIndex = keys.indexOf(this.data.theme.key);
     const nextIndex = (currentIndex + 1) % keys.length;
     const nextKey = keys[nextIndex];
-    this.setData({
-      theme: { key: nextKey, ...TIME_THEMES[nextKey] }
-    });
+    const theme = { key: nextKey, ...TIME_THEMES[nextKey] };
+    this.setData({ theme });
+    applyTabBarTheme(theme);
   },
 
   setTheme: function(e) {
     const key = e.currentTarget.dataset.key;
-    this.setData({
-      theme: { key, ...TIME_THEMES[key] }
-    });
+    const theme = { key, ...TIME_THEMES[key] };
+    this.setData({ theme });
+    applyTabBarTheme(theme);
   },
 
   onShow: function () {
+    this.updateTheme();
     this.checkPrivacyStatus();
     this.checkLoginStatus();
     this.loadTodayMeals();
@@ -221,15 +136,18 @@ Page({
     return true;
   },
 
-  openCameraPopup: function () {
+  openCameraPopup: function (preferredMealKey) {
     const defaultMeal = recognizeMealType(new Date());
-    const defaultTitle = generateTitle(defaultMeal.key);
+    const mealTypes = getAllMealTypes();
+    const hasPreferred = mealTypes.some((meal) => meal.key === preferredMealKey);
+    const selectedMealKey = hasPreferred ? preferredMealKey : defaultMeal.key;
+    const defaultTitle = generateTitle(selectedMealKey);
     this.setData({
       showCameraPopup: true,
       cameraPhotos: [],
       photoAdjustData: [],
-      cameraMealTypes: getAllMealTypes(),
-      cameraMealType: defaultMeal.key,
+      cameraMealTypes: mealTypes,
+      cameraMealType: selectedMealKey,
       cameraTitle: defaultTitle,
       uploadProgress: '',
       isUploading: false,
@@ -649,7 +567,7 @@ Page({
     const meal = this.data.todayMeals.find(m => m.key === key);
     
     if (!meal || !meal.checked) {
-      this.onAddClick();
+      this.onAddClick(key);
       return;
     }
     
@@ -679,27 +597,10 @@ Page({
   onSharePoster: function() {
     const { popupRecord } = this.data;
     if (!popupRecord) return;
-    if (!popupRecord.imageUrl || popupRecord.imageUrl.length === 0) {
-      wx.showToast({ title: '没有可用图片', icon: 'none' });
-      return;
-    }
-
-    const styles = [
-      { name: '简约白', key: 'simple' },
-      { name: '时光灰', key: 'time' },
-      { name: '手写暖', key: 'warm' },
-    ];
-
-    wx.showActionSheet({
-      itemList: styles.map(s => s.name),
-      success: (res) => {
-        const selectedStyle = styles[res.tapIndex];
-        this.setData({ currentPosterStyle: selectedStyle.key });
-        this.generatePoster(popupRecord);
-      },
-    });
-
     this.onClosePopup();
+    wx.navigateTo({
+      url: `/pages/detail/detail?id=${popupRecord.id}`,
+    });
   },
 
   generatePoster: function (record) {
@@ -878,7 +779,7 @@ Page({
     });
   },
 
-  onAddClick: async function () {
+  onAddClick: async function (preferredMealKey) {
     if (!this.data.isAgreed) {
       wx.navigateTo({
         url: '/pages/privacy/privacy',
@@ -889,7 +790,7 @@ Page({
     const loggedIn = await this.ensureLogin();
     if (!loggedIn) return;
 
-    this.openCameraPopup();
+    this.openCameraPopup(preferredMealKey);
   },
 
   goToRecords: function () {
