@@ -7,7 +7,7 @@ App({
     userInfo: null,
     privacyAgreed: false,
     token: null,
-    apiBase: 'https://empire-democrat-responsibility-strengthen.trycloudflare.com',
+    apiBase: 'https://hhcf-api.openanthropic.com',
   },
   checkPrivacyAgreement: function () {
     const privacyAgreed = wx.getStorageSync('privacyAgreed');
