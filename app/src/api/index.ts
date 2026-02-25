@@ -34,12 +34,18 @@ class ApiService {
       headers['Authorization'] = `Bearer ${this.token}`;
     }
 
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 15000);
+
     try {
       const response = await fetch(`${API_BASE}${options.url}`, {
         method: options.method || 'GET',
         headers,
         body: options.data ? JSON.stringify(options.data) : undefined,
+        signal: controller.signal,
       });
+
+      clearTimeout(timeoutId);
 
       const data = await response.json();
 
@@ -64,7 +70,11 @@ class ApiService {
 
       throw new Error(data.error || '请求失败');
     } catch (error: any) {
-      console.error('API Error:', error);
+      clearTimeout(timeoutId);
+      console.error('API Error:', error.name, error.message);
+      if (error.name === 'AbortError') {
+        throw new Error('请求超时，请检查网络');
+      }
       throw new Error(error.message || '网络错误，请稍后重试');
     }
   }
