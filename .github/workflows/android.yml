@@ -30,9 +30,11 @@ jobs:
       - name: Expo Prebuild
         run: cd app && npx expo prebuild --platform android --clean --non-interactive
 
-      - name: Fix Gradle Paths
+      - name: Create JS Bundle
         run: |
-          sed -i "s|workingDir(projectDir)|workingDir(rootDir.getParentFile())|g" app/android/app/build.gradle
+          cd app
+          mkdir -p android/app/src/main/assets
+          npx expo export:embed --platform android --entry-file node_modules/expo/AppEntry.js --bundle-output android/app/src/main/assets/index.android.bundle --dev false
 
       - name: Setup Java
         uses: actions/setup-java@v4
