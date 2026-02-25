@@ -40,9 +40,10 @@ jobs:
         run: pod install
 
       - name: Build iOS
-        working-directory: ./app/ios
+        working-directory: ./app
         run: |
-          xcodebuild -workspace HHCF.xcworkspace \
+          export PATH="$PWD/node_modules/.bin:$PATH"
+          xcodebuild -workspace ios/HHCF.xcworkspace \
             -scheme HHCF \
             -configuration Debug \
             -destination 'generic/platform=iOS Simulator' \
