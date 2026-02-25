@@ -45,8 +45,8 @@ jobs:
       - name: Build iOS
         run: |
           cd app/ios
-          xcodebuild -workspace HHCF.xcworkspace \
-            -scheme HHCF \
+          xcodebuild -workspace app.xcworkspace \
+            -scheme app \
             -configuration Debug \
             -destination 'generic/platform=iOS Simulator' \
             build \
