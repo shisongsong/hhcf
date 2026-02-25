@@ -9,6 +9,7 @@ import {
   KeyboardAvoidingView,
   Platform,
   ScrollView,
+  ActivityIndicator,
 } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useApp } from '../context/AppContext';
@@ -58,11 +59,15 @@ export const LoginScreen: React.FC<{ navigation: any }> = ({ navigation }) => {
 
     setLoading(true);
     try {
+      console.log('开始登录:', { phone, verificationCode: code });
+      
       const result = await api.request({
         url: '/api/phone-login',
         method: 'POST',
         data: { phone, verificationCode: code },
       });
+      
+      console.log('登录成功:', result);
       
       // Store token
       await AsyncStorage.setItem('token', result.token);
@@ -70,7 +75,7 @@ export const LoginScreen: React.FC<{ navigation: any }> = ({ navigation }) => {
       setIsLoggedIn(true);
       navigation.replace('Home');
     } catch (error: any) {
-      console.log('Login error:', error);
+      console.log('登录失败:', error);
       Alert.alert('登录失败', error.message || '请检查网络后重试');
     } finally {
       setLoading(false);
@@ -132,13 +137,15 @@ export const LoginScreen: React.FC<{ navigation: any }> = ({ navigation }) => {
           </View>
 
           <TouchableOpacity
-            style={[styles.loginButton, { backgroundColor: theme.accent }]}
+            style={[styles.loginButton, { backgroundColor: loading ? '#CCCCCC' : theme.accent }]}
             onPress={handleLogin}
             disabled={loading}
           >
-            <Text style={styles.loginButtonText}>
-              {loading ? '登录中...' : '登录'}
-            </Text>
+            {loading ? (
+              <ActivityIndicator color="#FFFFFF" />
+            ) : (
+              <Text style={styles.loginButtonText}>登录</Text>
+            )}
           </TouchableOpacity>
 
           <View style={styles.divider}>
