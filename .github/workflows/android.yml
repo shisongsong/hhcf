@@ -44,8 +44,10 @@ jobs:
         uses: android-actions/setup-android@v2
 
       - name: Build Android Debug APK
-        working-directory: ./app/android
+        working-directory: ./app
         run: |
+          export PATH="$PWD/node_modules/.bin:$PATH"
+          cd android
           chmod +x gradlew
           ./gradlew assembleDebug
 
@@ -101,8 +103,10 @@ jobs:
 
       - name: Build Android Release APK
         if: env.ANDROID_RELEASE_STORE_BASE64 != ''
-        working-directory: ./app/android
+        working-directory: ./app
         run: |
+          export PATH="$PWD/node_modules/.bin:$PATH"
+          cd android
           chmod +x gradlew
           ./gradlew assembleRelease
 
