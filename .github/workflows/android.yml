@@ -36,6 +36,11 @@ jobs:
           cd app
           npm ci
 
+      - name: Expo Prebuild
+        run: |
+          cd app
+          npx expo prebuild --platform android --clean
+
       - name: Setup Android SDK
         uses: android-actions/setup-android@v2
 
@@ -77,6 +82,11 @@ jobs:
         run: |
           cd app
           npm ci
+
+      - name: Expo Prebuild
+        run: |
+          cd app
+          npx expo prebuild --platform android --clean
 
       - name: Setup Android SDK
         uses: android-actions/setup-android@v2
