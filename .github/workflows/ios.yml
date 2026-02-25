@@ -23,9 +23,21 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: '20'
+          cache: 'npm'
+          cache-dependency-path: app/package-lock.json
+
+      - name: Cache CocoaPods
+        uses: actions/cache@v4
+        with:
+          path: |
+            app/ios/Pods
+            ~/.cocoapods
+          key: ${{ runner.os }}-pods-${{ hashFiles('app/ios/Podfile.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-pods-
 
       - name: Install dependencies
-        run: cd app && npm install
+        run: cd app && npm ci
 
       - name: Expo Prebuild
         run: cd app && npx expo prebuild --platform ios --clean --non-interactive
