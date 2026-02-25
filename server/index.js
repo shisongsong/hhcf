@@ -39,6 +39,25 @@ const pool = mysql.createPool({
   queueLimit: 0
 });
 
+// 初始化数据库表
+async function initDatabase() {
+  try {
+    await pool.execute(`
+      CREATE TABLE IF NOT EXISTS users (
+        id VARCHAR(36) PRIMARY KEY,
+        phone VARCHAR(20) UNIQUE,
+        openid VARCHAR(64),
+        created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+        updated_at DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+      )
+    `);
+    console.log('Users table ready');
+  } catch (err) {
+    console.error('Init database error:', err);
+  }
+}
+initDatabase();
+
 const qiniuConfig = {
   accessKey: process.env.QINIU_ACCESS_KEY || 'your-access-key',
   secretKey: process.env.QINIU_SECRET_KEY || 'your-secret-key',
@@ -121,6 +140,66 @@ app.post('/api/login', async (req, res) => {
     const token = generateToken(openid);
     res.json({ success: true, openid, token, temp: true });
   }
+});
+
+// 手机号登录/注册
+app.post('/api/phone-login', async (req, res) => {
+  const { phone, verificationCode } = req.body;
+
+  if (!phone || !verificationCode) {
+    return res.status(400).json({ error: '缺少手机号或验证码' });
+  }
+
+  // 验证码校验（生产环境应使用短信服务验证）
+  // 这里简化为 123456
+  if (verificationCode !== '123456') {
+    return res.status(400).json({ error: '验证码错误' });
+  }
+
+  try {
+    // 查找或创建用户
+    let [users] = await pool.execute(
+      'SELECT * FROM users WHERE phone = ?',
+      [phone]
+    );
+
+    let user;
+    if (users.length === 0) {
+      // 新用户注册
+      const userId = uuidv4();
+      await pool.execute(
+        'INSERT INTO users (id, phone, created_at) VALUES (?, ?, NOW())',
+        [userId, phone]
+      );
+      user = { id: userId, phone };
+    } else {
+      user = users[0];
+    }
+
+    const token = generateToken(user.id);
+    res.json({ success: true, openid: user.id, token });
+  } catch (err) {
+    console.error('手机号登录异常:', err);
+    res.status(500).json({ error: '登录失败' });
+  }
+});
+
+// 发送验证码
+app.post('/api/send-code', async (req, res) => {
+  const { phone } = req.body;
+
+  if (!phone) {
+    return res.status(400).json({ error: '缺少手机号' });
+  }
+
+  // 生成6位验证码
+  const code = Math.floor(100000 + Math.random() * 900000).toString();
+  
+  // TODO: 调用短信服务发送验证码
+  // 这里简化为直接返回成功，实际应存储验证码到Redis并发送短信
+  console.log(`验证码: ${code}`);
+
+  res.json({ success: true, message: '验证码已发送' });
 });
 
 app.get('/api/records', async (req, res) => {
