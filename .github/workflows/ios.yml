@@ -40,7 +40,7 @@ jobs:
         run: |
           cd app
           mkdir -p ios/main.jsbundle
-          npx react-native bundle --platform ios --dev false --entry-file node_modules/expo/AppEntry.js --bundle-output ios/main.jsbundle/index.jsbundle --assets-dest ios/main.jsbundle
+          npx expo export:embed --platform ios --entry-file node_modules/expo/AppEntry.js --bundle-output ios/main.jsbundle/index.jsbundle --dev false
 
       - name: Build iOS
         run: |
