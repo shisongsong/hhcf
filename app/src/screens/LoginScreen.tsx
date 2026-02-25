@@ -21,6 +21,7 @@ export const LoginScreen: React.FC<{ navigation: any }> = ({ navigation }) => {
   const [code, setCode] = useState('');
   const [loading, setLoading] = useState(false);
   const [countdown, setCountdown] = useState(0);
+  const [debugInfo, setDebugInfo] = useState('');
 
   const handleSendCode = async () => {
     if (!phone || phone.length !== 11) {
@@ -58,8 +59,9 @@ export const LoginScreen: React.FC<{ navigation: any }> = ({ navigation }) => {
     }
 
     setLoading(true);
+    setDebugInfo('开始登录...');
     try {
-      console.log('开始登录:', { phone, verificationCode: code });
+      setDebugInfo('发送请求...');
       
       const result = await api.request({
         url: '/api/phone-login',
@@ -67,15 +69,14 @@ export const LoginScreen: React.FC<{ navigation: any }> = ({ navigation }) => {
         data: { phone, verificationCode: code },
       });
       
-      console.log('登录成功:', result);
-      
-      // Store token
+      setDebugInfo('登录成功，存储token...');
       await AsyncStorage.setItem('token', result.token);
       api.setToken(result.token);
       setIsLoggedIn(true);
       navigation.replace('Home');
     } catch (error: any) {
       console.log('登录失败:', error);
+      setDebugInfo('错误: ' + (error.message || error.toString()));
       Alert.alert('登录失败', error.message || '请检查网络后重试');
     } finally {
       setLoading(false);
@@ -169,6 +170,12 @@ export const LoginScreen: React.FC<{ navigation: any }> = ({ navigation }) => {
             </Text>
           </TouchableOpacity>
         </View>
+
+        {debugInfo ? (
+          <View style={[styles.debugBox, { backgroundColor: '#000', borderColor: '#0f0' }]}>
+            <Text style={styles.debugText}>{debugInfo}</Text>
+          </View>
+        ) : null}
       </ScrollView>
     </KeyboardAvoidingView>
   );
@@ -273,6 +280,17 @@ const styles = StyleSheet.create({
   },
   agreementText: {
     fontSize: 12,
+  },
+  debugBox: {
+    marginTop: 20,
+    padding: 12,
+    borderRadius: 8,
+    borderWidth: 1,
+  },
+  debugText: {
+    color: '#0f0',
+    fontSize: 12,
+    fontFamily: 'monospace',
   },
 });
 
