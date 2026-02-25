@@ -14,7 +14,7 @@ import CameraScreen from './src/screens/CameraScreen';
 const Stack = createNativeStackNavigator();
 
 const AppNavigator: React.FC = () => {
-  const { isAgreed, isLoggedIn } = useApp();
+  const { theme, isAgreed, isLoggedIn } = useApp();
 
   const getInitialRouteName = () => {
     if (!isAgreed) return 'Privacy';
