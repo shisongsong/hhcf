@@ -10,6 +10,7 @@ interface AppContextType {
   isAgreed: boolean;
   apiConnected: boolean;
   setTheme: (theme: Theme) => void;
+  setIsLoggedIn: (loggedIn: boolean) => void;
   login: () => Promise<void>;
   logout: () => void;
   setPrivacyAgreed: (agreed: boolean) => void;
@@ -57,6 +58,10 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     setThemeState(newTheme);
   };
 
+  const handleSetIsLoggedIn = (loggedIn: boolean) => {
+    setIsLoggedIn(loggedIn);
+  };
+
   const login = async () => {
     // In real app, use expo-auth-session or react-native-auth0
     // For now, simulate with a mock code
@@ -91,6 +96,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
         isAgreed,
         apiConnected,
         setTheme,
+        setIsLoggedIn: handleSetIsLoggedIn,
         login,
         logout,
         setPrivacyAgreed,

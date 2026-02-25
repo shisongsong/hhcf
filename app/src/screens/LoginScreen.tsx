@@ -10,11 +10,12 @@ import {
   Platform,
   ScrollView,
 } from 'react-native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useApp } from '../context/AppContext';
 import api from '../api';
 
 export const LoginScreen: React.FC<{ navigation: any }> = ({ navigation }) => {
-  const { theme, login, setPrivacyAgreed } = useApp();
+  const { theme, setIsLoggedIn } = useApp();
   const [phone, setPhone] = useState('');
   const [code, setCode] = useState('');
   const [loading, setLoading] = useState(false);
@@ -63,10 +64,13 @@ export const LoginScreen: React.FC<{ navigation: any }> = ({ navigation }) => {
         data: { phone, verificationCode: code },
       });
       
-      await login();
+      // Store token
+      await AsyncStorage.setItem('token', result.token);
+      api.setToken(result.token);
+      setIsLoggedIn(true);
       navigation.replace('Home');
     } catch (error: any) {
-      Alert.alert('登录失败', error.message);
+      Alert.alert('登录失败', error.message || '请稍后重试');
     } finally {
       setLoading(false);
     }
