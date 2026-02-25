@@ -15,6 +15,7 @@ Page({
     theme: {},
     themeList: themeList,
     todayMeals: [],
+    todayCheckedCount: 0,
     showMealPopup: false,
     popupRecord: null,
     popupMealInfo: null,
@@ -559,7 +560,9 @@ Page({
         };
       });
       
-      this.setData({ todayMeals });
+      const todayCheckedCount = todayMeals.filter(m => m.checked).length;
+      
+      this.setData({ todayMeals, todayCheckedCount });
     } catch (err) {
       console.error('加载今日记录失败', err);
     }
