@@ -64,7 +64,8 @@ class ApiService {
 
       throw new Error(data.error || '请求失败');
     } catch (error: any) {
-      throw error;
+      console.error('API Error:', error);
+      throw new Error(error.message || '网络错误，请稍后重试');
     }
   }
 

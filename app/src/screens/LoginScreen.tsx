@@ -70,7 +70,8 @@ export const LoginScreen: React.FC<{ navigation: any }> = ({ navigation }) => {
       setIsLoggedIn(true);
       navigation.replace('Home');
     } catch (error: any) {
-      Alert.alert('登录失败', error.message || '请稍后重试');
+      console.log('Login error:', error);
+      Alert.alert('登录失败', error.message || '请检查网络后重试');
     } finally {
       setLoading(false);
     }
