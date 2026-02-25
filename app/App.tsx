@@ -1,7 +1,8 @@
 import React from 'react';
-import { StatusBar, View, Text, StyleSheet, ActivityIndicator } from 'react-native';
+import { StatusBar, View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 import { NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
+import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { AppProvider, useApp } from './src/context/AppContext';
 import HomeScreen from './src/screens/HomeScreen';
@@ -12,6 +13,47 @@ import PrivacyScreen from './src/screens/PrivacyScreen';
 import CameraScreen from './src/screens/CameraScreen';
 
 const Stack = createNativeStackNavigator();
+const Tab = createBottomTabNavigator();
+
+const TabBar: React.FC<{ theme: any; navigation: any }> = ({ theme, navigation }) => {
+  const state = navigation.getState();
+  const currentRoute = state.routes[state.index].name;
+
+  return (
+    <View style={[styles.tabBar, { backgroundColor: theme.card, borderTopColor: '#E0E0E0' }]}>
+      <TouchableOpacity
+        style={styles.tabItem}
+        onPress={() => navigation.navigate('Home')}
+      >
+        <Text style={[styles.tabIcon, currentRoute === 'Home' && styles.tabIconActive]}>🏠</Text>
+        <Text style={[styles.tabText, { color: currentRoute === 'Home' ? theme.accent : theme.textSecondary }]}>首页</Text>
+      </TouchableOpacity>
+      <TouchableOpacity
+        style={styles.tabItem}
+        onPress={() => navigation.navigate('Records')}
+      >
+        <Text style={[styles.tabIcon, currentRoute === 'Records' && styles.tabIconActive]}>📋</Text>
+        <Text style={[styles.tabText, { color: currentRoute === 'Records' ? theme.accent : theme.textSecondary }]}>记录</Text>
+      </TouchableOpacity>
+    </View>
+  );
+};
+
+const MainTabs: React.FC = () => {
+  const { theme } = useApp();
+
+  return (
+    <Tab.Navigator
+      screenOptions={{
+        headerShown: false,
+        tabBar: (props) => <TabBar {...props} theme={theme} />,
+      }}
+    >
+      <Tab.Screen name="Home" component={HomeScreen} />
+      <Tab.Screen name="Records" component={RecordsScreen} />
+    </Tab.Navigator>
+  );
+};
 
 const AppNavigator: React.FC = () => {
   const { theme, isAgreed, isLoggedIn } = useApp();
@@ -52,21 +94,6 @@ const AppNavigator: React.FC = () => {
   );
 };
 
-const MainTabs: React.FC = () => {
-  const { theme } = useApp();
-
-  return (
-    <Stack.Navigator
-      screenOptions={{
-        headerShown: false,
-      }}
-    >
-      <Stack.Screen name="Home" component={HomeScreen} />
-      <Stack.Screen name="Records" component={RecordsScreen} />
-    </Stack.Navigator>
-  );
-};
-
 const App: React.FC = () => {
   return (
     <SafeAreaProvider>
@@ -79,24 +106,27 @@ const App: React.FC = () => {
 };
 
 const styles = StyleSheet.create({
-  errorContainer: {
+  tabBar: {
+    flexDirection: 'row',
+    borderTopWidth: 1,
+    paddingBottom: 20,
+    paddingTop: 8,
+  },
+  tabItem: {
     flex: 1,
-    justifyContent: 'center',
     alignItems: 'center',
-    padding: 40,
+    justifyContent: 'center',
   },
-  errorEmoji: {
-    fontSize: 64,
-    marginBottom: 20,
-  },
-  errorTitle: {
+  tabIcon: {
     fontSize: 24,
-    fontWeight: 'bold',
-    marginBottom: 12,
+    opacity: 0.5,
   },
-  errorMessage: {
-    fontSize: 16,
-    textAlign: 'center',
+  tabIconActive: {
+    opacity: 1,
+  },
+  tabText: {
+    fontSize: 12,
+    marginTop: 4,
   },
 });
 

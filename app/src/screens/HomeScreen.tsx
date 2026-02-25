@@ -85,32 +85,22 @@ export const HomeScreen: React.FC<{ navigation: any }> = ({ navigation }) => {
           <Text style={[styles.month, { color: theme.textSecondary }]}>{month}</Text>
         </View>
         
-        <View style={styles.headerRight}>
-          {/* Theme Switcher */}
-          <View style={styles.themeContainer}>
-            {Object.values(TIME_THEMES).map((t) => (
-              <TouchableOpacity
-                key={t.key}
-                style={[
-                  styles.themeButton,
-                  { backgroundColor: theme.key === t.key ? t.accent : '#E0E0E0' },
-                ]}
-                onPress={() => handleThemePress(t.key)}
-              >
-                <Text style={styles.themeEmoji}>
-                  {t.key === 'morning' ? '🌅' : t.key === 'noon' ? '☀️' : t.key === 'afternoon' ? '🌤️' : '🌙'}
-                </Text>
-              </TouchableOpacity>
-            ))}
-          </View>
-          
-          {/* Records List Button */}
-          <TouchableOpacity
-            style={[styles.recordsButton, { backgroundColor: theme.card }]}
-            onPress={() => navigation.navigate('Records')}
-          >
-            <Text style={styles.recordsButtonText}>📋</Text>
-          </TouchableOpacity>
+        {/* Theme Switcher */}
+        <View style={styles.themeContainer}>
+          {Object.values(TIME_THEMES).map((t) => (
+            <TouchableOpacity
+              key={t.key}
+              style={[
+                styles.themeButton,
+                { backgroundColor: theme.key === t.key ? t.accent : '#E0E0E0' },
+              ]}
+              onPress={() => handleThemePress(t.key)}
+            >
+              <Text style={styles.themeEmoji}>
+                {t.key === 'morning' ? '🌅' : t.key === 'noon' ? '☀️' : t.key === 'afternoon' ? '🌤️' : '🌙'}
+              </Text>
+            </TouchableOpacity>
+          ))}
         </View>
       </View>
 
@@ -200,14 +190,9 @@ const styles = StyleSheet.create({
   header: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    alignItems: 'flex-start',
+    alignItems: 'center',
     padding: 20,
     paddingTop: 60,
-  },
-  headerRight: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 12,
   },
   dateContainer: {
     flexDirection: 'row',
@@ -234,17 +219,6 @@ const styles = StyleSheet.create({
   },
   themeEmoji: {
     fontSize: 18,
-  },
-  recordsButton: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  recordsButtonText: {
-    fontSize: 20,
-  },
   },
   progressContainer: {
     margin: 20,
