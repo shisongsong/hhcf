@@ -2,12 +2,36 @@ App({
   onLaunch: function () {
     this.checkPrivacyAgreement();
     this.checkLoginStatus();
+    this.checkApiConnection();
   },
   globalData: {
     userInfo: null,
     privacyAgreed: false,
     token: null,
     apiBase: 'https://hhcf-api.openanthropic.com',
+    apiConnected: false,
+  },
+  checkApiConnection: function() {
+    return new Promise((resolve) => {
+      wx.request({
+        url: `${this.globalData.apiBase}/api/health`,
+        method: 'GET',
+        timeout: 5000,
+        success: (res) => {
+          this.globalData.apiConnected = true;
+          resolve(true);
+        },
+        fail: () => {
+          this.globalData.apiConnected = false;
+          wx.showModal({
+            title: '连接失败',
+            content: '无法连接到服务器，请检查网络后重启小程序',
+            showCancel: false,
+          });
+          resolve(false);
+        },
+      });
+    });
   },
   checkPrivacyAgreement: function () {
     const privacyAgreed = wx.getStorageSync('privacyAgreed');
@@ -59,19 +83,39 @@ App({
       header['Authorization'] = `Bearer ${token}`;
     }
     return new Promise((resolve, reject) => {
-      wx.request({
-        ...options,
-        header,
-        url: `${this.globalData.apiBase}${options.url}`,
-        success: (res) => {
-          if (res.data.success) {
-            resolve(res.data);
-          } else {
-            reject(new Error(res.data.error || '请求失败'));
-          }
-        },
-        fail: reject,
-      });
+      const doRequest = () => {
+        wx.request({
+          ...options,
+          header,
+          url: `${this.globalData.apiBase}${options.url}`,
+          success: (res) => {
+            if (res.data.success) {
+              resolve(res.data);
+            } else if (res.data.error === '未登录' || res.data.error === 'token无效') {
+              this.login().then(() => {
+                header['Authorization'] = `Bearer ${this.getToken()}`;
+                wx.request({
+                  ...options,
+                  header,
+                  url: `${this.globalData.apiBase}${options.url}`,
+                  success: (retryRes) => {
+                    if (retryRes.data.success) {
+                      resolve(retryRes.data);
+                    } else {
+                      reject(new Error(retryRes.data.error || '请求失败'));
+                    }
+                  },
+                  fail: reject,
+                });
+              }).catch(reject);
+            } else {
+              reject(new Error(res.data.error || '请求失败'));
+            }
+          },
+          fail: reject,
+        });
+      };
+      doRequest();
     });
   },
 });

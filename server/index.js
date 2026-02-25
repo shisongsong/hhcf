@@ -22,6 +22,11 @@ app.use('/api', (req, res, next) => {
   next();
 });
 
+// 健康检查端点
+app.get('/api/health', (req, res) => {
+  res.json({ status: 'ok', timestamp: Date.now() });
+});
+
 // MySQL 连接池
 const pool = mysql.createPool({
   host: process.env.MYSQL_HOST || 'localhost',
