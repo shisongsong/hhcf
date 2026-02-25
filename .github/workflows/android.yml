@@ -25,12 +25,10 @@ jobs:
           node-version: '20'
 
       - name: Install dependencies
-        working-directory: ./app
-        run: npm install
+        run: cd app && npm install
 
       - name: Expo Prebuild
-        working-directory: ./app
-        run: npx expo prebuild --platform android --clean --non-interactive
+        run: cd app && npx expo prebuild --platform android --clean --non-interactive
 
       - name: Setup Java
         uses: actions/setup-java@v4
@@ -41,11 +39,15 @@ jobs:
       - name: Setup Android SDK
         uses: android-actions/setup-android@v2
 
-      - name: Build Android Debug APK
-        working-directory: ./app
+      - name: Create JS Bundle
         run: |
-          export PATH="$PWD/node_modules/.bin:$ANDROID_HOME/cmdline-tools/latest/bin:$ANDROID_HOME/platform-tools:$PATH"
-          cd android
+          cd app
+          mkdir -p android/app/src/main/assets
+          npx react-native bundle --platform android --dev false --entry-file node_modules/expo/AppEntry.js --bundle-output android/app/src/main/assets/index.android.bundle --assets-dest android/app/src/main/res
+
+      - name: Build Android Debug APK
+        run: |
+          cd app/android
           chmod +x gradlew
           ./gradlew assembleDebug -x lint --no-daemon
 

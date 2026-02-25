@@ -25,25 +25,27 @@ jobs:
           node-version: '20'
 
       - name: Install dependencies
-        working-directory: ./app
-        run: npm install
+        run: cd app && npm install
 
       - name: Expo Prebuild
-        working-directory: ./app
-        run: npx expo prebuild --platform ios --clean --non-interactive
+        run: cd app && npx expo prebuild --platform ios --clean --non-interactive
 
       - name: Setup Xcode
         run: sudo xcode-select -s /Applications/Xcode_15.4.app
 
       - name: Install CocoaPods
-        working-directory: ./app/ios
-        run: pod install
+        run: cd app/ios && pod install
+
+      - name: Create JS Bundle
+        run: |
+          cd app
+          mkdir -p ios/main.jsbundle
+          npx react-native bundle --platform ios --dev false --entry-file node_modules/expo/AppEntry.js --bundle-output ios/main.jsbundle/index.jsbundle --assets-dest ios/main.jsbundle
 
       - name: Build iOS
-        working-directory: ./app
         run: |
-          export PATH="$PWD/node_modules/.bin:$PATH"
-          xcodebuild -workspace ios/HHCF.xcworkspace \
+          cd app/ios
+          xcodebuild -workspace HHCF.xcworkspace \
             -scheme HHCF \
             -configuration Debug \
             -destination 'generic/platform=iOS Simulator' \
