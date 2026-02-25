@@ -26,6 +26,8 @@ export const CameraScreen: React.FC<{ navigation: any; route: any }> = ({ naviga
   const [permission, requestPermission] = useCameraPermissions();
   const cameraRef = useRef<CameraView>(null);
 
+  const defaultTitles = ['今天吃得真香！', '美味的一餐', '好好吃饭', '又是光盘行动', '幸福感满满'];
+
   useEffect(() => {
     if (!permission?.granted) {
       requestPermission();
@@ -74,16 +76,11 @@ export const CameraScreen: React.FC<{ navigation: any; route: any }> = ({ naviga
       return;
     }
 
-    if (!title.trim()) {
-      Alert.alert('提示', '请输入标题');
-      return;
-    }
-
     setUploading(true);
     try {
       await api.uploadRecord({
         mealType,
-        title: title.trim(),
+        title: title.trim() || '今天吃得真香！',
         photos,
       });
       
@@ -165,7 +162,7 @@ export const CameraScreen: React.FC<{ navigation: any; route: any }> = ({ naviga
 
       {/* Photo Grid */}
       {photos.length > 0 && (
-        <ScrollView style={styles.photoContainer}>
+          <ScrollView style={styles.photoContainer} keyboardShouldPersistTaps="handled">
           <View style={styles.photoGrid}>
             {photos.map((photo, index) => (
               <View key={index} style={styles.photoWrapper}>
@@ -189,7 +186,7 @@ export const CameraScreen: React.FC<{ navigation: any; route: any }> = ({ naviga
 
           {/* Title Input */}
           <View style={[styles.inputSection, { backgroundColor: theme.card }]}>
-            <Text style={[styles.label, { color: theme.text }]}>标题</Text>
+            <Text style={[styles.label, { color: theme.text }]}>标题（选填）</Text>
             <TextInput
               style={[styles.input, { color: theme.text, borderColor: theme.textSecondary }]}
               value={title}
@@ -198,6 +195,17 @@ export const CameraScreen: React.FC<{ navigation: any; route: any }> = ({ naviga
               placeholderTextColor={theme.textSecondary}
               maxLength={50}
             />
+            <View style={styles.titleSuggestions}>
+              {defaultTitles.map((t, i) => (
+                <TouchableOpacity
+                  key={i}
+                  style={[styles.suggestionChip, { borderColor: theme.textSecondary }]}
+                  onPress={() => setTitle(t)}
+                >
+                  <Text style={[styles.suggestionText, { color: theme.textSecondary }]}>{t}</Text>
+                </TouchableOpacity>
+              ))}
+            </View>
           </View>
 
           {/* Meal Type */}
@@ -226,7 +234,7 @@ export const CameraScreen: React.FC<{ navigation: any; route: any }> = ({ naviga
       )}
 
       {photos.length === 0 && (
-        <ScrollView style={styles.photoContainer}>
+          <ScrollView style={styles.photoContainer} keyboardShouldPersistTaps="handled">
           <View style={styles.photoGrid}>
             <TouchableOpacity style={[styles.addButton, { borderColor: theme.textSecondary }]} onPress={pickImage}>
               <Text style={styles.addButtonText}>+</Text>
@@ -235,7 +243,7 @@ export const CameraScreen: React.FC<{ navigation: any; route: any }> = ({ naviga
 
           {/* Title Input */}
           <View style={[styles.inputSection, { backgroundColor: theme.card }]}>
-            <Text style={[styles.label, { color: theme.text }]}>标题</Text>
+            <Text style={[styles.label, { color: theme.text }]}>标题（选填）</Text>
             <TextInput
               style={[styles.input, { color: theme.text, borderColor: theme.textSecondary }]}
               value={title}
@@ -244,6 +252,17 @@ export const CameraScreen: React.FC<{ navigation: any; route: any }> = ({ naviga
               placeholderTextColor={theme.textSecondary}
               maxLength={50}
             />
+            <View style={styles.titleSuggestions}>
+              {defaultTitles.map((t, i) => (
+                <TouchableOpacity
+                  key={i}
+                  style={[styles.suggestionChip, { borderColor: theme.textSecondary }]}
+                  onPress={() => setTitle(t)}
+                >
+                  <Text style={[styles.suggestionText, { color: theme.textSecondary }]}>{t}</Text>
+                </TouchableOpacity>
+              ))}
+            </View>
           </View>
 
           {/* Meal Type */}
@@ -279,7 +298,7 @@ export const CameraScreen: React.FC<{ navigation: any; route: any }> = ({ naviga
             { backgroundColor: photos.length > 0 && title.trim() ? theme.accent : '#CCCCCC' }
           ]}
           onPress={handleSubmit}
-          disabled={uploading || photos.length === 0 || !title.trim()}
+          disabled={uploading || photos.length === 0}
         >
           {uploading ? (
             <ActivityIndicator color="#FFFFFF" />
@@ -482,6 +501,21 @@ const styles = StyleSheet.create({
     color: '#FFFFFF',
     fontSize: 18,
     fontWeight: '600',
+  },
+  titleSuggestions: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    marginTop: 8,
+    gap: 8,
+  },
+  suggestionChip: {
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 16,
+    borderWidth: 1,
+  },
+  suggestionText: {
+    fontSize: 12,
   },
 });
 
