@@ -73,7 +73,10 @@ export const LoginScreen: React.FC<{ navigation: any }> = ({ navigation }) => {
       await AsyncStorage.setItem('token', result.token);
       api.setToken(result.token);
       setIsLoggedIn(true);
-      navigation.replace('Home');
+      navigation.reset({
+        index: 0,
+        routes: [{ name: 'Main' }],
+      });
     } catch (error: any) {
       console.log('登录失败:', error);
       setDebugInfo('错误: ' + (error.message || error.toString()));
