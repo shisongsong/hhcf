@@ -14,19 +14,7 @@ import CameraScreen from './src/screens/CameraScreen';
 const Stack = createNativeStackNavigator();
 
 const AppNavigator: React.FC = () => {
-  const { theme, apiConnected, isAgreed, isLoggedIn } = useApp();
-
-  if (!apiConnected) {
-    return (
-      <View style={[styles.errorContainer, { backgroundColor: theme.background }]}>
-        <Text style={styles.errorEmoji}>📡</Text>
-        <Text style={[styles.errorTitle, { color: theme.text }]}>连接失败</Text>
-        <Text style={[styles.errorMessage, { color: theme.textSecondary }]}>
-          无法连接到服务器，请检查网络后重启App
-        </Text>
-      </View>
-    );
-  }
+  const { isAgreed, isLoggedIn } = useApp();
 
   const getInitialRouteName = () => {
     if (!isAgreed) return 'Privacy';

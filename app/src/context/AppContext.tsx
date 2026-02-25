@@ -45,8 +45,9 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
         setIsAgreed(true);
       }
 
-      const connected = await api.checkConnection();
-      setApiConnected(connected);
+      // 暂时跳过连接检查，直接进入app
+      // const connected = await api.checkConnection();
+      // setApiConnected(connected);
     } catch (error) {
       console.error('Init app error:', error);
     }
