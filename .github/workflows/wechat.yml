@@ -3,6 +3,13 @@ name: 微信小程序 CI/CD
 on:
   push:
     branches: [ main ]
+    paths:
+      - 'miniprogram/**'
+      - '.github/workflows/wechat.yml'
+  pull_request:
+    branches: [ main ]
+    paths:
+      - 'miniprogram/**'
 
 jobs:
   build:
@@ -35,7 +42,7 @@ jobs:
             --uv "CI-${{ github.run_number }}" \
             --robot 1 \
             --desc "CI自动上传"
-          
+        
       - name: Generate QR Code
         run: |
           miniprogram-ci preview \
@@ -44,7 +51,7 @@ jobs:
             --appid ${{ secrets.APPID }} \
             --uv "CI-${{ github.run_number }}" \
             --qr-destination cloud
-          
+        
       - name: Set Experience Version
         run: |
           miniprogram-ci experience \

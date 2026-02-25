@@ -5,6 +5,7 @@ on:
     branches: [main]
     paths:
       - 'app/**'
+      - '.github/workflows/android.yml'
   pull_request:
     branches: [main]
     paths:
@@ -32,25 +33,23 @@ jobs:
           java-version: '17'
 
       - name: Install dependencies
-        run: |
-          cd app
-          npm ci
+        working-directory: ./app
+        run: npm ci
 
       - name: Expo Prebuild
-        run: |
-          cd app
-          npx expo prebuild --platform android --clean
+        working-directory: ./app
+        run: npx expo prebuild --platform android --clean --non-interactive
 
       - name: Setup Android SDK
         uses: android-actions/setup-android@v2
 
       - name: Build Android Debug APK
+        working-directory: ./app/android
         run: |
-          cd app/android
           chmod +x gradlew
           ./gradlew assembleDebug
         env:
-          JAVA_HOME: ${{ env.JAVA_HOME }}
+          JAVA_HOME: /opt/hostedtoolcache/Java_Temurin-Hotspot_jdk/17.0.9-9/x64
 
       - name: Upload APK
         uses: actions/upload-artifact@v4
@@ -61,6 +60,7 @@ jobs:
   build-android-release:
     runs-on: ubuntu-latest
     if: github.ref == 'refs/heads/main'
+    needs: build-android
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -79,14 +79,12 @@ jobs:
           java-version: '17'
 
       - name: Install dependencies
-        run: |
-          cd app
-          npm ci
+        working-directory: ./app
+        run: npm ci
 
       - name: Expo Prebuild
-        run: |
-          cd app
-          npx expo prebuild --platform android --clean
+        working-directory: ./app
+        run: npx expo prebuild --platform android --clean --non-interactive
 
       - name: Setup Android SDK
         uses: android-actions/setup-android@v2
@@ -105,12 +103,12 @@ jobs:
 
       - name: Build Android Release APK
         if: env.ANDROID_RELEASE_STORE_BASE64 != ''
+        working-directory: ./app/android
         run: |
-          cd app/android
           chmod +x gradlew
           ./gradlew assembleRelease
         env:
-          JAVA_HOME: ${{ env.JAVA_HOME }}
+          JAVA_HOME: /opt/hostedtoolcache/Java_Temurin-Hotspot_jdk/17.0.9-9/x64
 
       - name: Upload Release APK
         if: env.ANDROID_RELEASE_STORE_BASE64 != ''
