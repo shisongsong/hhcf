@@ -240,11 +240,10 @@ app.get('/api/records', async (req, res) => {
 
     sql += ' ORDER BY timestamp DESC, id DESC';
     if (isPagedQuery) {
-      sql += ' LIMIT ?';
-      params.push(limit);
+      sql += ' LIMIT ' + limit;
     }
 
-    const [rows] = await pool.execute(sql, params);
+    const [rows] = await pool.query(sql, params);
     const records = [];
     for (const row of rows) {
       const record = {
