@@ -1,6 +1,6 @@
-import React, { useEffect, useRef } from 'react';
+import React from 'react';
 import { StatusBar, View, Text, StyleSheet, TouchableOpacity } from 'react-native';
-import { NavigationContainer, useNavigation } from '@react-navigation/native';
+import { NavigationContainer, DefaultTheme } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
@@ -57,56 +57,34 @@ const MainTabs: React.FC = () => {
 
 const AppNavigator: React.FC = () => {
   const { theme, isAgreed, isLoggedIn } = useApp();
-  const navigation = useNavigation();
-  const isReady = useRef(false);
 
-  useEffect(() => {
-    if (isReady.current) return;
-    isReady.current = true;
-    
-    if (!isAgreed) {
-      navigation.reset({
-        index: 0,
-        routes: [{ name: 'Privacy' }],
-      });
-    } else if (!isLoggedIn) {
-      navigation.reset({
-        index: 0,
-        routes: [{ name: 'Login' }],
-      });
-    } else {
-      navigation.reset({
-        index: 0,
-        routes: [{ name: 'Main' }],
-      });
-    }
-  }, [isAgreed, isLoggedIn, navigation]);
-
-  const getScreenOptions = () => {
+  const getInitialRouteName = () => {
     if (!isAgreed) return 'Privacy';
     if (!isLoggedIn) return 'Login';
     return 'Main';
   };
 
+  const navTheme = {
+    ...DefaultTheme,
+    dark: false,
+    colors: {
+      ...DefaultTheme.colors,
+      primary: theme.accent || '#FF8C42',
+      background: theme.background || '#FFFFFF',
+      card: theme.card || '#FFFFFF',
+      text: theme.text || '#333333',
+      border: theme.card || '#FFFFFF',
+      notification: theme.accent || '#FF8C42',
+    },
+  };
+
   return (
-    <NavigationContainer
-      theme={{
-        dark: false,
-        colors: {
-          primary: theme.accent,
-          background: theme.background,
-          card: theme.card,
-          text: theme.text,
-          border: theme.card,
-          notification: theme.accent,
-        },
-      }}
-    >
+    <NavigationContainer theme={navTheme}>
       <Stack.Navigator
         screenOptions={{
           headerShown: false,
         }}
-        initialRouteName={getScreenOptions()}
+        initialRouteName={getInitialRouteName()}
       >
         <Stack.Screen name="Privacy" component={PrivacyScreen} />
         <Stack.Screen name="Login" component={LoginScreen} />
