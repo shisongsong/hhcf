@@ -1,5 +1,5 @@
-import React from 'react';
-import { StatusBar, View, Text, StyleSheet, TouchableOpacity } from 'react-native';
+import React, { useEffect, useState } from 'react';
+import { StatusBar, View, Text, StyleSheet, TouchableOpacity, ActivityIndicator } from 'react-native';
 import { NavigationContainer, DefaultTheme } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
@@ -17,23 +17,23 @@ const Tab = createBottomTabNavigator();
 
 const TabBar: React.FC<{ theme: any; navigation: any }> = ({ theme, navigation }) => {
   const state = navigation.getState();
-  const currentRoute = state.routes[state.index].name;
+  const currentRoute = state.routes[state.index]?.name || 'Home';
 
   return (
-    <View style={[styles.tabBar, { backgroundColor: theme.card, borderTopColor: '#E0E0E0' }]}>
+    <View style={[styles.tabBar, { backgroundColor: theme?.card || '#fff', borderTopColor: '#E0E0E0' }]}>
       <TouchableOpacity
         style={styles.tabItem}
         onPress={() => navigation.navigate('Home')}
       >
         <Text style={[styles.tabIcon, currentRoute === 'Home' && styles.tabIconActive]}>🏠</Text>
-        <Text style={[styles.tabText, { color: currentRoute === 'Home' ? theme.accent : theme.textSecondary }]}>首页</Text>
+        <Text style={[styles.tabText, { color: currentRoute === 'Home' ? theme?.accent : theme?.textSecondary }]}>首页</Text>
       </TouchableOpacity>
       <TouchableOpacity
         style={styles.tabItem}
         onPress={() => navigation.navigate('Records')}
       >
         <Text style={[styles.tabIcon, currentRoute === 'Records' && styles.tabIconActive]}>📋</Text>
-        <Text style={[styles.tabText, { color: currentRoute === 'Records' ? theme.accent : theme.textSecondary }]}>记录</Text>
+        <Text style={[styles.tabText, { color: currentRoute === 'Records' ? theme?.accent : theme?.textSecondary }]}>记录</Text>
       </TouchableOpacity>
     </View>
   );
@@ -57,6 +57,17 @@ const MainTabs: React.FC = () => {
 
 const AppNavigator: React.FC = () => {
   const { theme, isAgreed, isLoggedIn } = useApp();
+  const [isReady, setIsReady] = useState(false);
+
+  useEffect(() => {
+    // 等待 AppProvider 初始化完成
+    const timer = setTimeout(() => setIsReady(true), 100);
+    return () => clearTimeout(timer);
+  }, []);
+
+  useEffect(() => {
+    if (!isReady) return;
+  }, [isReady, isAgreed, isLoggedIn]);
 
   const getInitialRouteName = () => {
     if (!isAgreed) return 'Privacy';
@@ -69,14 +80,22 @@ const AppNavigator: React.FC = () => {
     dark: false,
     colors: {
       ...DefaultTheme.colors,
-      primary: theme.accent || '#FF8C42',
-      background: theme.background || '#FFFFFF',
-      card: theme.card || '#FFFFFF',
-      text: theme.text || '#333333',
-      border: theme.card || '#FFFFFF',
-      notification: theme.accent || '#FF8C42',
+      primary: theme?.accent || '#FF8C42',
+      background: theme?.background || '#FFFFFF',
+      card: theme?.card || '#FFFFFF',
+      text: theme?.text || '#333333',
+      border: theme?.card || '#FFFFFF',
+      notification: theme?.accent || '#FF8C42',
     },
   };
+
+  if (!isReady) {
+    return (
+      <View style={styles.loading}>
+        <ActivityIndicator size="large" color="#FF8C42" />
+      </View>
+    );
+  }
 
   return (
     <NavigationContainer theme={navTheme}>
@@ -108,6 +127,12 @@ const App: React.FC = () => {
 };
 
 const styles = StyleSheet.create({
+  loading: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: '#FFFFFF',
+  },
   tabBar: {
     flexDirection: 'row',
     borderTopWidth: 1,
