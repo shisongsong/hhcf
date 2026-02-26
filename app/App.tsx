@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React from 'react';
 import { StatusBar, View, Text, StyleSheet, TouchableOpacity, ActivityIndicator } from 'react-native';
 import { NavigationContainer, DefaultTheme } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
@@ -56,18 +56,15 @@ const MainTabs: React.FC = () => {
 };
 
 const AppNavigator: React.FC = () => {
-  const { theme, isAgreed, isLoggedIn } = useApp();
-  const [isReady, setIsReady] = useState(false);
+  const { theme, isAgreed, isLoggedIn, isLoading } = useApp();
 
-  useEffect(() => {
-    // 等待 AppProvider 初始化完成
-    const timer = setTimeout(() => setIsReady(true), 100);
-    return () => clearTimeout(timer);
-  }, []);
-
-  useEffect(() => {
-    if (!isReady) return;
-  }, [isReady, isAgreed, isLoggedIn]);
+  if (isLoading) {
+    return (
+      <View style={styles.loading}>
+        <ActivityIndicator size="large" color="#FF8C42" />
+      </View>
+    );
+  }
 
   const getInitialRouteName = () => {
     if (!isAgreed) return 'Privacy';
@@ -88,14 +85,6 @@ const AppNavigator: React.FC = () => {
       notification: theme?.accent || '#FF8C42',
     },
   };
-
-  if (!isReady) {
-    return (
-      <View style={styles.loading}>
-        <ActivityIndicator size="large" color="#FF8C42" />
-      </View>
-    );
-  }
 
   return (
     <NavigationContainer theme={navTheme}>

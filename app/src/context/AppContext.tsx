@@ -8,10 +8,10 @@ interface AppContextType {
   token: string | null;
   isLoggedIn: boolean;
   isAgreed: boolean;
+  isLoading: boolean;
   apiConnected: boolean;
   setTheme: (theme: Theme) => void;
   setIsLoggedIn: (loggedIn: boolean) => void;
-  login: () => Promise<void>;
   logout: () => void;
   agreeToPrivacy: () => Promise<void>;
 }
@@ -23,6 +23,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
   const [token, setToken] = useState<string | null>(null);
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [isAgreed, setIsAgreed] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
   const [apiConnected, setApiConnected] = useState(true);
 
   useEffect(() => {
@@ -45,12 +46,10 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
       if (storedAgreed === 'true') {
         setIsAgreed(true);
       }
-
-      // 暂时跳过连接检查，直接进入app
-      // const connected = await api.checkConnection();
-      // setApiConnected(connected);
     } catch (error) {
       console.error('Init app error:', error);
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -60,19 +59,6 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
 
   const handleSetIsLoggedIn = (loggedIn: boolean) => {
     setIsLoggedIn(loggedIn);
-  };
-
-  const login = async () => {
-    // In real app, use expo-auth-session or react-native-auth0
-    // For now, simulate with a mock code
-    try {
-      const result = await api.login('mock_code');
-      await AsyncStorage.setItem('token', result.token);
-      setToken(result.token);
-      setIsLoggedIn(true);
-    } catch (error) {
-      throw error;
-    }
   };
 
   const logout = () => {
@@ -94,10 +80,10 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
         token,
         isLoggedIn,
         isAgreed,
+        isLoading,
         apiConnected,
         setTheme,
         setIsLoggedIn: handleSetIsLoggedIn,
-        login,
         logout,
         agreeToPrivacy,
       }}

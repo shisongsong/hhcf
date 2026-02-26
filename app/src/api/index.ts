@@ -54,18 +54,9 @@ class ApiService {
       }
 
       if (data.error === '未登录' || data.error === 'token无效') {
-        await this.login();
-        headers['Authorization'] = `Bearer ${this.token}`;
-        const retryResponse = await fetch(`${API_BASE}${options.url}`, {
-          method: options.method || 'GET',
-          headers,
-          body: options.data ? JSON.stringify(options.data) : undefined,
-        });
-        const retryData = await retryResponse.json();
-        if (retryData.success) {
-          return retryData;
-        }
-        throw new Error(retryData.error || '请求失败');
+        // 清除本地存储的无效 token
+        this.token = null;
+        throw new Error('请重新登录');
       }
 
       throw new Error(data.error || '请求失败');
