@@ -8,7 +8,6 @@ import {
   Alert,
   KeyboardAvoidingView,
   Platform,
-  ScrollView,
   ActivityIndicator,
 } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -21,7 +20,6 @@ export const LoginScreen: React.FC<{ navigation: any }> = ({ navigation }) => {
   const [code, setCode] = useState('');
   const [loading, setLoading] = useState(false);
   const [countdown, setCountdown] = useState(0);
-  const [debugInfo, setDebugInfo] = useState('');
 
   const handleSendCode = async () => {
     if (!phone || phone.length !== 11) {
@@ -30,12 +28,7 @@ export const LoginScreen: React.FC<{ navigation: any }> = ({ navigation }) => {
     }
 
     try {
-      await api.request({
-        url: '/api/send-code',
-        method: 'POST',
-        data: { phone },
-      });
-      
+      await api.sendVerificationCode(phone);
       Alert.alert('提示', '验证码已发送');
       setCountdown(60);
       const timer = setInterval(() => {
@@ -59,17 +52,8 @@ export const LoginScreen: React.FC<{ navigation: any }> = ({ navigation }) => {
     }
 
     setLoading(true);
-    setDebugInfo('开始登录...');
     try {
-      setDebugInfo('发送请求...');
-      
-      const result = await api.request({
-        url: '/api/phone-login',
-        method: 'POST',
-        data: { phone, verificationCode: code },
-      });
-      
-      setDebugInfo('登录成功，存储token...');
+      const result = await api.phoneLogin(phone, code);
       await AsyncStorage.setItem('token', result.token);
       api.setToken(result.token);
       setIsLoggedIn(true);
@@ -78,37 +62,37 @@ export const LoginScreen: React.FC<{ navigation: any }> = ({ navigation }) => {
         routes: [{ name: 'Main' }],
       });
     } catch (error: any) {
-      console.log('登录失败:', error);
-      setDebugInfo('错误: ' + (error.message || error.toString()));
-      Alert.alert('登录失败', error.message || '请检查网络后重试');
+      Alert.alert('登录失败', error.message);
     } finally {
       setLoading(false);
     }
   };
 
-  const handleWechatLogin = async () => {
-    // 微信登录逻辑
-    Alert.alert('提示', '微信登录开发中');
-  };
-
   return (
-    <KeyboardAvoidingView
-      style={[styles.container, { backgroundColor: theme.background }]}
-      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-    >
-      <ScrollView contentContainerStyle={styles.scrollContent}>
+    <View style={[styles.container, { backgroundColor: theme.bgGradient?.[0] || theme.background }]}>
+      <View style={styles.bgDecoration}>
+        <View style={[styles.blob1, { backgroundColor: theme.blobs?.[0] || '#E8C4C8' }]} />
+        <View style={[styles.blob2, { backgroundColor: theme.blobs?.[1] || '#D4A4B0' }]} />
+        <View style={[styles.blob3, { backgroundColor: theme.blobs?.[2] || '#C48490' }]} />
+      </View>
+
+      <KeyboardAvoidingView
+        style={styles.content}
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+      >
         <View style={styles.header}>
-          <Text style={[styles.title, { color: theme.text }]}>好好吃饭</Text>
+          <Text style={styles.logoEmoji}>🍽️</Text>
+          <Text style={[styles.title, { color: theme.textPrimary }]}>好好吃饭</Text>
           <Text style={[styles.subtitle, { color: theme.textSecondary }]}>
             记录每一餐的美好
           </Text>
         </View>
 
         <View style={[styles.form, { backgroundColor: theme.card }]}>
-          <Text style={[styles.label, { color: theme.text }]}>手机号</Text>
-          <View style={styles.inputContainer}>
+          <View style={styles.inputGroup}>
+            <Text style={[styles.inputLabel, { color: theme.textSecondary }]}>手机号</Text>
             <TextInput
-              style={[styles.input, { color: theme.text, borderColor: theme.textSecondary }]}
+              style={[styles.input, { color: theme.text, borderBottomColor: theme.textSecondary }]}
               value={phone}
               onChangeText={setPhone}
               placeholder="请输入手机号"
@@ -118,32 +102,34 @@ export const LoginScreen: React.FC<{ navigation: any }> = ({ navigation }) => {
             />
           </View>
 
-          <Text style={[styles.label, { color: theme.text }]}>验证码</Text>
-          <View style={styles.inputContainer}>
-            <TextInput
-              style={[styles.input, styles.codeInput, { color: theme.text, borderColor: theme.textSecondary }]}
-              value={code}
-              onChangeText={setCode}
-              placeholder="请输入验证码"
-              placeholderTextColor={theme.textSecondary}
-              keyboardType="number-pad"
-              maxLength={6}
-            />
-            <TouchableOpacity
-              style={[styles.codeButton, { backgroundColor: theme.accent }]}
-              onPress={handleSendCode}
-              disabled={countdown > 0}
-            >
-              <Text style={styles.codeButtonText}>
-                {countdown > 0 ? `${countdown}s` : '获取验证码'}
-              </Text>
-            </TouchableOpacity>
+          <View style={styles.inputGroup}>
+            <Text style={[styles.inputLabel, { color: theme.textSecondary }]}>验证码</Text>
+            <View style={styles.codeRow}>
+              <TextInput
+                style={[styles.input, styles.codeInput, { color: theme.text, borderBottomColor: theme.textSecondary }]}
+                value={code}
+                onChangeText={setCode}
+                placeholder="请输入验证码"
+                placeholderTextColor={theme.textSecondary}
+                keyboardType="number-pad"
+                maxLength={6}
+              />
+              <TouchableOpacity
+                style={[styles.codeButton, { backgroundColor: countdown > 0 ? '#ccc' : theme.accent }]}
+                onPress={handleSendCode}
+                disabled={countdown > 0 || phone.length !== 11}
+              >
+                <Text style={styles.codeButtonText}>
+                  {countdown > 0 ? `${countdown}s` : '获取验证码'}
+                </Text>
+              </TouchableOpacity>
+            </View>
           </View>
 
           <TouchableOpacity
-            style={[styles.loginButton, { backgroundColor: loading ? '#CCCCCC' : theme.accent }]}
+            style={[styles.loginButton, { backgroundColor: theme.primary }]}
             onPress={handleLogin}
-            disabled={loading}
+            disabled={loading || !phone || !code}
           >
             {loading ? (
               <ActivityIndicator color="#FFFFFF" />
@@ -151,80 +137,103 @@ export const LoginScreen: React.FC<{ navigation: any }> = ({ navigation }) => {
               <Text style={styles.loginButtonText}>登录</Text>
             )}
           </TouchableOpacity>
-
-          <View style={styles.divider}>
-            <View style={[styles.dividerLine, { backgroundColor: theme.textSecondary }]} />
-            <Text style={[styles.dividerText, { color: theme.textSecondary }]}>或</Text>
-            <View style={[styles.dividerLine, { backgroundColor: theme.textSecondary }]} />
-          </View>
-
-          <TouchableOpacity
-            style={[styles.wechatButton, { backgroundColor: '#07C160' }]}
-            onPress={handleWechatLogin}
-          >
-            <Text style={styles.wechatButtonText}>微信一键登录</Text>
-          </TouchableOpacity>
         </View>
 
-        <View style={styles.agreement}>
-          <TouchableOpacity onPress={() => navigation.navigate('Privacy')}>
-            <Text style={[styles.agreementText, { color: theme.textSecondary }]}>
-              登录即表示同意《用户协议》和《隐私政策》
-            </Text>
-          </TouchableOpacity>
-        </View>
-
-        {debugInfo ? (
-          <View style={[styles.debugBox, { backgroundColor: '#000', borderColor: '#0f0' }]}>
-            <Text style={styles.debugText}>{debugInfo}</Text>
-          </View>
-        ) : null}
-      </ScrollView>
-    </KeyboardAvoidingView>
+        <TouchableOpacity 
+          style={styles.privacyLink}
+          onPress={() => navigation.navigate('Privacy')}
+        >
+          <Text style={[styles.privacyText, { color: theme.textSecondary }]}>
+            登录即表示同意《用户协议》和《隐私政策》
+          </Text>
+        </TouchableOpacity>
+      </KeyboardAvoidingView>
+    </View>
   );
 };
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+    position: 'relative',
   },
-  scrollContent: {
-    flexGrow: 1,
-    padding: 20,
+  bgDecoration: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    overflow: 'hidden',
+  },
+  blob1: {
+    position: 'absolute',
+    width: 200,
+    height: 200,
+    borderRadius: 100,
+    top: -50,
+    right: -50,
+    opacity: 0.5,
+  },
+  blob2: {
+    position: 'absolute',
+    width: 150,
+    height: 150,
+    borderRadius: 75,
+    bottom: '20%',
+    left: -30,
+    opacity: 0.4,
+  },
+  blob3: {
+    position: 'absolute',
+    width: 100,
+    height: 100,
+    borderRadius: 50,
+    top: '40%',
+    right: 20,
+    opacity: 0.3,
+  },
+  content: {
+    flex: 1,
+    padding: 24,
     justifyContent: 'center',
   },
   header: {
     alignItems: 'center',
     marginBottom: 40,
   },
+  logoEmoji: {
+    fontSize: 60,
+    marginBottom: 16,
+  },
   title: {
-    fontSize: 32,
+    fontSize: 28,
     fontWeight: 'bold',
   },
   subtitle: {
-    fontSize: 16,
+    fontSize: 14,
     marginTop: 8,
   },
   form: {
-    borderRadius: 16,
+    borderRadius: 20,
     padding: 24,
   },
-  label: {
-    fontSize: 14,
-    fontWeight: '600',
-    marginBottom: 8,
+  inputGroup: {
+    marginBottom: 24,
   },
-  inputContainer: {
-    flexDirection: 'row',
-    marginBottom: 20,
+  inputLabel: {
+    fontSize: 12,
+    marginBottom: 8,
+    textTransform: 'uppercase',
+    letterSpacing: 1,
   },
   input: {
-    flex: 1,
-    height: 48,
-    borderWidth: 1,
-    borderRadius: 8,
-    paddingHorizontal: 16,
-    fontSize: 16,
+    fontSize: 18,
+    paddingVertical: 12,
+    borderBottomWidth: 1,
+  },
+  codeRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
   },
   codeInput: {
     flex: 1,
@@ -232,8 +241,9 @@ const styles = StyleSheet.create({
   },
   codeButton: {
     paddingHorizontal: 16,
+    paddingVertical: 12,
     borderRadius: 8,
-    justifyContent: 'center',
+    minWidth: 100,
     alignItems: 'center',
   },
   codeButtonText: {
@@ -242,8 +252,8 @@ const styles = StyleSheet.create({
     fontWeight: '600',
   },
   loginButton: {
-    height: 48,
-    borderRadius: 24,
+    height: 50,
+    borderRadius: 25,
     justifyContent: 'center',
     alignItems: 'center',
     marginTop: 8,
@@ -253,47 +263,12 @@ const styles = StyleSheet.create({
     fontSize: 18,
     fontWeight: '600',
   },
-  divider: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginVertical: 20,
-  },
-  dividerLine: {
-    flex: 1,
-    height: 1,
-  },
-  dividerText: {
-    marginHorizontal: 16,
-    fontSize: 14,
-  },
-  wechatButton: {
-    height: 48,
-    borderRadius: 24,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  wechatButtonText: {
-    color: '#FFFFFF',
-    fontSize: 18,
-    fontWeight: '600',
-  },
-  agreement: {
+  privacyLink: {
     marginTop: 24,
     alignItems: 'center',
   },
-  agreementText: {
+  privacyText: {
     fontSize: 12,
-  },
-  debugBox: {
-    marginTop: 20,
-    padding: 12,
-    borderRadius: 8,
-    borderWidth: 1,
-  },
-  debugText: {
-    color: '#0f0',
-    fontSize: 12,
-    fontFamily: 'monospace',
   },
 });
 
