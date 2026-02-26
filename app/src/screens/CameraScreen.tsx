@@ -10,6 +10,8 @@ import {
   TextInput,
   ActivityIndicator,
   Dimensions,
+  ActionSheetIOS,
+  Platform,
 } from 'react-native';
 import { CameraView, useCameraPermissions } from 'expo-camera';
 import * as ImagePicker from 'expo-image-picker';
@@ -19,6 +21,20 @@ import api from '../api';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 const VIEWFINDER_SIZE = SCREEN_WIDTH - 80;
+
+const TITLE_OPTIONS = [
+  '早餐打卡',
+  '午餐打卡',
+  '晚餐打卡',
+  '加餐打卡',
+  '今天吃得真香！',
+  '美味的一餐',
+  '好好吃饭',
+  '又是光盘行动',
+  '幸福感满满',
+  '家常便饭',
+  '自己动手丰衣足食',
+];
 
 export const CameraScreen: React.FC<{ navigation: any; route: any }> = ({ navigation, route }) => {
   const { theme } = useApp();
@@ -77,6 +93,27 @@ export const CameraScreen: React.FC<{ navigation: any; route: any }> = ({ naviga
     setPhotos(photos.filter((_, i) => i !== index));
   };
 
+  const handleTitlePress = () => {
+    if (Platform.OS === 'ios') {
+      ActionSheetIOS.showActionSheetWithOptions(
+        {
+          options: ['取消', ...TITLE_OPTIONS],
+          cancelButtonIndex: 0,
+        },
+        (buttonIndex) => {
+          if (buttonIndex > 0) {
+            setTitle(TITLE_OPTIONS[buttonIndex - 1]);
+          }
+        }
+      );
+    } else {
+      Alert.alert('选择标题', '', [
+        ...TITLE_OPTIONS.map(t => ({ text: t, onPress: () => setTitle(t) })),
+        { text: '取消', style: 'cancel' },
+      ]);
+    }
+  };
+
   const handleSave = async () => {
     if (photos.length === 0) {
       Alert.alert('提示', '请先拍照');
@@ -86,19 +123,22 @@ export const CameraScreen: React.FC<{ navigation: any; route: any }> = ({ naviga
     setUploading(true);
     setUploadProgress('上传中...');
     try {
-      await api.uploadRecord({
+      console.log('保存记录 - mealType:', mealType, 'title:', title, 'photos:', photos.length);
+      const result = await api.uploadRecord({
         mealType,
         title: title.trim() || generateTitle(mealType),
         photos,
       });
+      console.log('上传成功:', result);
       
       setUploadProgress('上传完成');
       setTimeout(() => {
         navigation.goBack();
       }, 500);
     } catch (error: any) {
+      console.error('上传失败:', error);
       setUploadProgress('上传失败，点击重试');
-      Alert.alert('上传失败', error.message);
+      Alert.alert('上传失败', error.message || '请重试');
     } finally {
       setUploading(false);
     }
@@ -191,10 +231,10 @@ export const CameraScreen: React.FC<{ navigation: any; route: any }> = ({ naviga
         </View>
 
         {/* 标题 */}
-        <TouchableOpacity style={styles.titleSection}>
+        <TouchableOpacity style={styles.titleSection} onPress={handleTitlePress}>
           <Text style={styles.sectionTitle}>标题</Text>
           <View style={styles.titleBar}>
-            <Text style={styles.titleText}>{title}</Text>
+            <Text style={styles.titleText}>{title || '点击选择'}</Text>
             <View style={styles.editBtn}>
               <Text style={styles.editBtnText}>编辑</Text>
             </View>

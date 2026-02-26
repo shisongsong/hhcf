@@ -1,6 +1,6 @@
-import React from 'react';
+import React, { useEffect, useRef } from 'react';
 import { StatusBar, View, Text, StyleSheet, TouchableOpacity } from 'react-native';
-import { NavigationContainer } from '@react-navigation/native';
+import { NavigationContainer, useNavigation } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
@@ -57,8 +57,32 @@ const MainTabs: React.FC = () => {
 
 const AppNavigator: React.FC = () => {
   const { theme, isAgreed, isLoggedIn } = useApp();
+  const navigation = useNavigation();
+  const isReady = useRef(false);
 
-  const getInitialRouteName = () => {
+  useEffect(() => {
+    if (isReady.current) return;
+    isReady.current = true;
+    
+    if (!isAgreed) {
+      navigation.reset({
+        index: 0,
+        routes: [{ name: 'Privacy' }],
+      });
+    } else if (!isLoggedIn) {
+      navigation.reset({
+        index: 0,
+        routes: [{ name: 'Login' }],
+      });
+    } else {
+      navigation.reset({
+        index: 0,
+        routes: [{ name: 'Main' }],
+      });
+    }
+  }, [isAgreed, isLoggedIn, navigation]);
+
+  const getScreenOptions = () => {
     if (!isAgreed) return 'Privacy';
     if (!isLoggedIn) return 'Login';
     return 'Main';
@@ -82,7 +106,7 @@ const AppNavigator: React.FC = () => {
         screenOptions={{
           headerShown: false,
         }}
-        initialRouteName={getInitialRouteName()}
+        initialRouteName={getScreenOptions()}
       >
         <Stack.Screen name="Privacy" component={PrivacyScreen} />
         <Stack.Screen name="Login" component={LoginScreen} />

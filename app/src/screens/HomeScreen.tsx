@@ -58,8 +58,22 @@ export const HomeScreen: React.FC<{ navigation: any }> = ({ navigation }) => {
 
   const loadTodayMeals = async () => {
     try {
+      console.log('加载记录...');
       const data = await api.getRecords(1, 100);
-      const records = data.data?.records || data.data || [];
+      console.log('API返回:', JSON.stringify(data).substring(0, 200));
+      
+      let records = [];
+      if (Array.isArray(data)) {
+        records = data;
+      } else if (data.data) {
+        if (Array.isArray(data.data)) {
+          records = data.data;
+        } else if (data.data.records) {
+          records = data.data.records;
+        }
+      }
+      
+      console.log('记录列表:', records.length);
       
       const todayStart = new Date();
       todayStart.setHours(0, 0, 0, 0);
@@ -68,6 +82,8 @@ export const HomeScreen: React.FC<{ navigation: any }> = ({ navigation }) => {
       const todayRecords = records.filter((r: MealRecord) => 
         r.timestamp >= todayStart.getTime() && r.timestamp < todayEnd
       );
+      
+      console.log('今日记录:', todayRecords.length);
       
       const mealTypes = getAllMealTypes();
       const meals = mealTypes.map(meal => {
@@ -78,6 +94,13 @@ export const HomeScreen: React.FC<{ navigation: any }> = ({ navigation }) => {
           record: record || null,
         };
       });
+      
+      console.log('今日餐别:', meals);
+      setTodayMeals(meals);
+    } catch (error) {
+      console.error('Load meals error:', error);
+    }
+  };
       
       setTodayMeals(meals);
     } catch (error) {
