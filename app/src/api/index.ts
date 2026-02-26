@@ -163,6 +163,7 @@ class ApiService {
       } as any);
     });
 
+    console.log('上传图片...');
     const uploadResponse = await fetch(`${API_BASE}/api/upload`, {
       method: 'POST',
       headers,
@@ -171,10 +172,11 @@ class ApiService {
     
     let uploadResult;
     try {
-      uploadResult = await uploadResponse.json();
-    } catch {
       const text = await uploadResponse.text();
-      console.error('Non-JSON response:', text);
+      console.log('上传响应:', text.substring(0, 200));
+      uploadResult = JSON.parse(text);
+    } catch (e) {
+      console.error('解析上传响应失败:', e);
       throw new Error('上传图片失败，请重试');
     }
     
@@ -183,7 +185,9 @@ class ApiService {
     }
 
     const { imageUrls } = uploadResult.data;
+    console.log('图片上传成功, URLs:', imageUrls);
     
+    console.log('保存记录...');
     const recordResponse = await fetch(`${API_BASE}/api/records`, {
       method: 'POST',
       headers: {
@@ -198,7 +202,16 @@ class ApiService {
       }),
     });
 
-    const recordResult = await recordResponse.json();
+    let recordResult;
+    try {
+      const text = await recordResponse.text();
+      console.log('记录响应:', text.substring(0, 200));
+      recordResult = JSON.parse(text);
+    } catch (e) {
+      console.error('解析记录响应失败:', e);
+      throw new Error('保存记录失败，请重试');
+    }
+    
     if (recordResult.success) {
       return recordResult;
     }

@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect, useCallback } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import {
   View,
   Text,
@@ -9,9 +9,7 @@ import {
   ScrollView,
   TextInput,
   ActivityIndicator,
-  KeyboardAvoidingView,
   Platform,
-  Keyboard,
 } from 'react-native';
 import { CameraView, useCameraPermissions } from 'expo-camera';
 import * as ImagePicker from 'expo-image-picker';
@@ -122,11 +120,7 @@ export const CameraScreen: React.FC<{ navigation: any; route: any }> = ({ naviga
   }
 
   return (
-    <KeyboardAvoidingView 
-      style={[styles.container, { backgroundColor: theme.background }]} 
-      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-      keyboardVerticalOffset={0}
-    >
+    <View style={[styles.container, { backgroundColor: theme.background }]}>
       {/* Header */}
       <View style={[styles.header, { backgroundColor: theme.card }]}>
         <TouchableOpacity onPress={() => navigation.goBack()} style={styles.headerButton}>
@@ -169,7 +163,7 @@ export const CameraScreen: React.FC<{ navigation: any; route: any }> = ({ naviga
 
       {/* Photo Grid */}
       {photos.length > 0 && (
-          <ScrollView style={styles.photoContainer} keyboardShouldPersistTaps="handled">
+          <ScrollView style={styles.photoContainer} keyboardShouldPersistTaps="handled" keyboardVerticalOffset={Platform.OS === 'android' ? 100 : 0}>
           <View style={styles.photoGrid}>
             {photos.map((photo, index) => (
               <View key={index} style={styles.photoWrapper}>
@@ -241,7 +235,7 @@ export const CameraScreen: React.FC<{ navigation: any; route: any }> = ({ naviga
       )}
 
       {photos.length === 0 && (
-          <ScrollView style={styles.photoContainer} keyboardShouldPersistTaps="handled">
+          <ScrollView style={styles.photoContainer} keyboardShouldPersistTaps="handled" keyboardVerticalOffset={Platform.OS === 'android' ? 100 : 0}>
           <View style={styles.photoGrid}>
             <TouchableOpacity style={[styles.addButton, { borderColor: theme.textSecondary }]} onPress={pickImage}>
               <Text style={styles.addButtonText}>+</Text>
@@ -316,7 +310,7 @@ export const CameraScreen: React.FC<{ navigation: any; route: any }> = ({ naviga
           )}
         </TouchableOpacity>
       </View>
-    </KeyboardAvoidingView>
+    </View>
   );
 };
 
