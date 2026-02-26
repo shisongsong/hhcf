@@ -1,0 +1,5 @@
+tunnel: hhcf-api
+credentials-file: /Users/ourhome/.cloudflared/7057f5d1-01e4-4fb8-b76a-6b27974b9210.json
+
+ingress:
+  - service: http://127.0.0.1:3000

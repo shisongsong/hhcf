@@ -13,7 +13,7 @@ interface AppContextType {
   setIsLoggedIn: (loggedIn: boolean) => void;
   login: () => Promise<void>;
   logout: () => void;
-  setPrivacyAgreed: (agreed: boolean) => void;
+  agreeToPrivacy: () => Promise<void>;
 }
 
 const AppContext = createContext<AppContextType | undefined>(undefined);
@@ -82,9 +82,9 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     AsyncStorage.removeItem('token');
   };
 
-  const setPrivacyAgreed = async (agreed: boolean) => {
-    await AsyncStorage.setItem('privacyAgreed', String(agreed));
-    setIsAgreed(agreed);
+  const agreeToPrivacy = async () => {
+    await AsyncStorage.setItem('privacyAgreed', 'true');
+    setIsAgreed(true);
   };
 
   return (
@@ -99,7 +99,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
         setIsLoggedIn: handleSetIsLoggedIn,
         login,
         logout,
-        setPrivacyAgreed,
+        agreeToPrivacy,
       }}
     >
       {children}

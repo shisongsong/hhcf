@@ -3,14 +3,14 @@ import {
   View,
   Text,
   StyleSheet,
-  FlatList,
+  SectionList,
   TouchableOpacity,
   Image,
   RefreshControl,
   Dimensions,
 } from 'react-native';
 import { useApp } from '../context/AppContext';
-import { getMealTypeInfo } from '../utils/theme';
+import { getMealTypeInfo, Theme, TIME_THEMES } from '../utils/theme';
 import api from '../api';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
@@ -19,35 +19,33 @@ interface MealRecord {
   id: string;
   mealType: string;
   title: string;
-  photos: string[];
+  imageUrl: string[];
+  timestamp: number;
   createdAt: string;
 }
 
+interface SectionData {
+  title: string;
+  data: MealRecord[];
+}
+
 export const RecordsScreen: React.FC<{ navigation: any }> = ({ navigation }) => {
-  const { theme } = useApp();
+  const { theme, isLoggedIn, isAgreed } = useApp();
   const [records, setRecords] = useState<MealRecord[]>([]);
   const [refreshing, setRefreshing] = useState(false);
-  const [page, setPage] = useState(1);
-  const [hasMore, setHasMore] = useState(true);
+  const [viewMode, setViewMode] = useState<'day' | 'week' | 'month'>('day');
 
   useEffect(() => {
-    loadRecords(true);
-  }, []);
+    if (isAgreed && isLoggedIn) {
+      loadRecords();
+    }
+  }, [isAgreed, isLoggedIn]);
 
-  const loadRecords = async (reset = false) => {
+  const loadRecords = async () => {
     try {
-      const currentPage = reset ? 1 : page;
-      const data = await api.getRecords(currentPage, 20);
-      const newRecords = data.data || [];
-      
-      if (reset) {
-        setRecords(newRecords);
-      } else {
-        setRecords(prev => [...prev, ...newRecords]);
-      }
-      
-      setHasMore(newRecords.length === 20);
-      setPage(currentPage + 1);
+      const data = await api.getRecords(1, 100);
+      const allRecords = data.data?.records || data.data || [];
+      setRecords(allRecords);
     } catch (error) {
       console.error('Load records error:', error);
     }
@@ -55,84 +53,117 @@ export const RecordsScreen: React.FC<{ navigation: any }> = ({ navigation }) => 
 
   const onRefresh = useCallback(async () => {
     setRefreshing(true);
-    setPage(1);
-    await loadRecords(true);
+    await loadRecords();
     setRefreshing(false);
   }, []);
 
-  const loadMore = () => {
-    if (hasMore && !refreshing) {
-      loadRecords(false);
-    }
+  const groupRecordsByDate = (): SectionData[] => {
+    const groups: Record<string, MealRecord[]> = {};
+    
+    records.forEach(record => {
+      const date = new Date(record.timestamp);
+      const key = `${date.getMonth() + 1}月${date.getDate()}日`;
+      if (!groups[key]) {
+        groups[key] = [];
+      }
+      groups[key].push(record);
+    });
+
+    return Object.entries(groups).map(([title, data]) => ({
+      title,
+      data: data.sort((a, b) => b.timestamp - a.timestamp),
+    }));
+  };
+
+  const formatTime = (timestamp: number) => {
+    const date = new Date(timestamp);
+    return `${String(date.getHours()).padStart(2, '0')}:${String(date.getMinutes()).padStart(2, '0')}`;
   };
 
   const handleRecordPress = (record: MealRecord) => {
-    navigation.navigate('Detail', { record });
+    navigation.navigate('Detail', { recordId: record.id });
   };
 
   const renderRecord = ({ item }: { item: MealRecord }) => {
     const mealInfo = getMealTypeInfo(item.mealType);
-    const date = new Date(item.createdAt);
-    const dateStr = `${date.getMonth() + 1}月${date.getDate()}日`;
-
     return (
-      <TouchableOpacity
-        style={[styles.recordCard, { backgroundColor: theme.card }]}
-        onPress={() => handleRecordPress(item)}
-      >
-        <View style={styles.recordContent}>
-          <View style={styles.recordHeader}>
-            <Text style={[styles.mealEmoji]}>{mealInfo.emoji}</Text>
-            <Text style={[styles.mealName, { color: theme.textSecondary }]}>
-              {mealInfo.name}
-            </Text>
-            <Text style={[styles.date, { color: theme.textSecondary }]}>
-              {dateStr}
-            </Text>
+      <TouchableOpacity style={styles.timelineItem} onPress={() => handleRecordPress(item)}>
+        <View style={styles.timelineLeft}>
+          <View style={[styles.timeDot, { backgroundColor: mealInfo.color }]}>
+            <View style={[styles.dotInner, { backgroundColor: mealInfo.color }]} />
           </View>
-          <Text style={[styles.title, { color: theme.text }]} numberOfLines={2}>
-            {item.title}
-          </Text>
+          <View style={[styles.timeLine, { backgroundColor: `${mealInfo.color}20` }]} />
         </View>
-        {item.photos?.[0] && (
-          <Image
-            source={{ uri: item.photos[0] }}
-            style={styles.thumbnail}
-          />
-        )}
+        <View style={styles.timelineContent}>
+          <View style={styles.contentHeader}>
+            <Text style={[styles.mealLabel, { color: mealInfo.color }]}>
+              {mealInfo.emoji} {mealInfo.label}
+            </Text>
+            <Text style={styles.recordTime}>{formatTime(item.timestamp)}</Text>
+          </View>
+          <View style={styles.imageGrid}>
+            {item.imageUrl?.slice(0, 3).map((img, index) => (
+              <View key={index} style={styles.gridImageItem}>
+                <Image source={{ uri: img }} style={styles.gridImage} />
+              </View>
+            ))}
+          </View>
+          <View style={styles.contentFooter}>
+            <Text style={styles.recordTitle}>{item.title}</Text>
+          </View>
+        </View>
       </TouchableOpacity>
     );
   };
 
-  const renderEmpty = () => (
-    <View style={styles.emptyContainer}>
-      <Text style={styles.emptyEmoji}>🍽️</Text>
-      <Text style={[styles.emptyText, { color: theme.textSecondary }]}>
-        还没有记录
-      </Text>
-      <Text style={[styles.emptyHint, { color: theme.textSecondary }]}>
-        点击首页的"记录美食"开始打卡
-      </Text>
+  const renderSectionHeader = ({ section }: { section: SectionData }) => (
+    <View style={styles.dateGroupTitle}>
+      <Text style={[styles.dateGroupText, { color: theme.textSecondary }]}>{section.title}</Text>
     </View>
   );
 
   return (
-    <View style={[styles.container, { backgroundColor: theme.background }]}>
-      <View style={[styles.header, { backgroundColor: theme.card }]}>
-        <Text style={[styles.headerTitle, { color: theme.text }]}>记录</Text>
+    <View style={[styles.container, { backgroundColor: theme.bgGradient?.[0] || theme.background }]}>
+      <View style={styles.pageHeader}>
+        <Text style={[styles.pageTitle, { color: theme.textPrimary }]}>记录</Text>
+        {records.length > 0 && (
+          <Text style={[styles.recordCount, { color: theme.textSecondary }]}>{records.length} 条</Text>
+        )}
       </View>
-      <FlatList
-        data={records}
-        renderItem={renderRecord}
-        keyExtractor={(item) => item.id}
-        contentContainerStyle={styles.list}
-        refreshControl={
-          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
-        }
-        onEndReached={loadMore}
-        onEndReachedThreshold={0.5}
-        ListEmptyComponent={renderEmpty}
-      />
+
+      <View style={styles.viewSwitch}>
+        {(['day', 'week', 'month'] as const).map((mode) => (
+          <TouchableOpacity
+            key={mode}
+            style={[styles.modeBtn, viewMode === mode && { backgroundColor: theme.accent }]}
+            onPress={() => setViewMode(mode)}
+          >
+            <Text style={[styles.modeBtnText, viewMode === mode && { color: '#fff' }]}>
+              {mode === 'day' ? '日视图' : mode === 'week' ? '周视图' : '月视图'}
+            </Text>
+          </TouchableOpacity>
+        ))}
+      </View>
+
+      {records.length > 0 ? (
+        <SectionList
+          sections={groupRecordsByDate()}
+          renderItem={renderRecord}
+          renderSectionHeader={renderSectionHeader}
+          keyExtractor={(item) => item.id}
+          refreshControl={
+            <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
+          }
+          contentContainerStyle={styles.listContent}
+          stickySectionHeadersEnabled={false}
+        />
+      ) : (
+        <View style={styles.emptyState}>
+          <Text style={styles.emptyEmoji}>🍽️</Text>
+          <Text style={[styles.emptyText, { color: theme.textPrimary }]}>还没有记录哦</Text>
+          <Text style={[styles.emptyHint, { color: theme.textSecondary }]}>记录你的第一顿饭吧</Text>
+        </View>
+      )}
     </View>
   );
 };
@@ -141,75 +172,137 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
   },
-  header: {
-    paddingTop: 60,
-    paddingBottom: 20,
-    paddingHorizontal: 20,
-  },
-  headerTitle: {
-    fontSize: 28,
-    fontWeight: 'bold',
-  },
-  list: {
-    padding: 16,
-    flexGrow: 1,
-  },
-  recordCard: {
-    flexDirection: 'row',
-    borderRadius: 12,
-    overflow: 'hidden',
-    marginBottom: 12,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 2,
-  },
-  recordContent: {
-    flex: 1,
-    padding: 12,
-  },
-  recordHeader: {
+  pageHeader: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: 8,
+    justifyContent: 'space-between',
+    paddingHorizontal: 20,
+    paddingTop: 60,
+    paddingBottom: 16,
   },
-  mealEmoji: {
-    fontSize: 16,
-    marginRight: 4,
+  pageTitle: {
+    fontSize: 28,
+    fontWeight: '600',
   },
-  mealName: {
-    fontSize: 12,
-    marginRight: 8,
+  recordCount: {
+    fontSize: 14,
   },
-  date: {
-    fontSize: 12,
+  viewSwitch: {
+    flexDirection: 'row',
+    marginHorizontal: 20,
+    marginBottom: 16,
+    backgroundColor: 'rgba(0,0,0,0.05)',
+    borderRadius: 8,
+    padding: 4,
   },
-  title: {
-    fontSize: 16,
+  modeBtn: {
+    flex: 1,
+    paddingVertical: 8,
+    alignItems: 'center',
+    borderRadius: 6,
+  },
+  modeBtnText: {
+    fontSize: 14,
+    fontWeight: '500',
+    color: '#666',
+  },
+  listContent: {
+    paddingHorizontal: 20,
+    paddingBottom: 100,
+  },
+  dateGroupTitle: {
+    paddingVertical: 12,
+  },
+  dateGroupText: {
+    fontSize: 14,
     fontWeight: '500',
   },
-  thumbnail: {
-    width: 100,
-    height: 100,
+  timelineItem: {
+    flexDirection: 'row',
+    marginBottom: 16,
   },
-  emptyContainer: {
-    flex: 1,
-    justifyContent: 'center',
+  timelineLeft: {
+    width: 20,
     alignItems: 'center',
-    paddingTop: 100,
+  },
+  timeDot: {
+    width: 12,
+    height: 12,
+    borderRadius: 6,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  dotInner: {
+    width: 6,
+    height: 6,
+    borderRadius: 3,
+  },
+  timeLine: {
+    width: 2,
+    flex: 1,
+    marginTop: 4,
+  },
+  timelineContent: {
+    flex: 1,
+    marginLeft: 12,
+    backgroundColor: '#fff',
+    borderRadius: 12,
+    overflow: 'hidden',
+  },
+  contentHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    padding: 12,
+    paddingBottom: 8,
+  },
+  mealLabel: {
+    fontSize: 14,
+    fontWeight: '600',
+  },
+  recordTime: {
+    fontSize: 12,
+    color: '#999',
+  },
+  imageGrid: {
+    flexDirection: 'row',
+    paddingHorizontal: 12,
+    gap: 4,
+  },
+  gridImageItem: {
+    width: (SCREEN_WIDTH - 84) / 3,
+    aspectRatio: 1,
+    borderRadius: 4,
+    overflow: 'hidden',
+  },
+  gridImage: {
+    width: '100%',
+    height: '100%',
+  },
+  contentFooter: {
+    padding: 12,
+    paddingTop: 8,
+  },
+  recordTitle: {
+    fontSize: 14,
+    color: '#333',
+  },
+  emptyState: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   emptyEmoji: {
-    fontSize: 64,
+    fontSize: 48,
     marginBottom: 16,
   },
   emptyText: {
     fontSize: 18,
-    fontWeight: '500',
+    fontWeight: '600',
+    marginBottom: 8,
   },
   emptyHint: {
     fontSize: 14,
-    marginTop: 8,
   },
 });
 

@@ -9,13 +9,16 @@ import {
   ScrollView,
   TextInput,
   ActivityIndicator,
-  Platform,
+  Dimensions,
 } from 'react-native';
 import { CameraView, useCameraPermissions } from 'expo-camera';
 import * as ImagePicker from 'expo-image-picker';
 import { useApp } from '../context/AppContext';
-import { getMealTypeInfo, recognizeMealType } from '../utils/theme';
+import { getMealTypeInfo, recognizeMealType, getAllMealTypes, generateTitle } from '../utils/theme';
 import api from '../api';
+
+const { width: SCREEN_WIDTH } = Dimensions.get('window');
+const VIEWFINDER_SIZE = SCREEN_WIDTH - 80;
 
 export const CameraScreen: React.FC<{ navigation: any; route: any }> = ({ navigation, route }) => {
   const { theme } = useApp();
@@ -23,17 +26,19 @@ export const CameraScreen: React.FC<{ navigation: any; route: any }> = ({ naviga
   const [photos, setPhotos] = useState<string[]>([]);
   const [title, setTitle] = useState('');
   const [uploading, setUploading] = useState(false);
+  const [uploadProgress, setUploadProgress] = useState('');
   const [facing, setFacing] = useState<'back' | 'front'>('back');
   const [permission, requestPermission] = useCameraPermissions();
   const cameraRef = useRef<CameraView>(null);
 
-  const defaultTitles = ['今天吃得真香！', '美味的一餐', '好好吃饭', '又是光盘行动', '幸福感满满'];
+  const mealTypes = getAllMealTypes();
 
   useEffect(() => {
     if (!permission?.granted) {
       requestPermission();
     }
-  }, [permission]);
+    setTitle(generateTitle(mealType));
+  }, []);
 
   const takePhoto = async () => {
     if (cameraRef.current && photos.length < 9) {
@@ -58,12 +63,13 @@ export const CameraScreen: React.FC<{ navigation: any; route: any }> = ({ naviga
     
     const result = await ImagePicker.launchImageLibraryAsync({
       mediaTypes: ImagePicker.MediaTypeOptions.Images,
-      allowsEditing: true,
+      allowsMultipleSelection: true,
       quality: 0.8,
     });
 
-    if (!result.canceled && result.assets[0]) {
-      setPhotos([...photos, result.assets[0].uri]);
+    if (!result.canceled) {
+      const newPhotos = result.assets.map(a => a.uri);
+      setPhotos([...photos, ...newPhotos].slice(0, 9));
     }
   };
 
@@ -71,48 +77,51 @@ export const CameraScreen: React.FC<{ navigation: any; route: any }> = ({ naviga
     setPhotos(photos.filter((_, i) => i !== index));
   };
 
-  const handleSubmit = async () => {
+  const handleSave = async () => {
     if (photos.length === 0) {
-      Alert.alert('提示', '请至少选择一张照片');
+      Alert.alert('提示', '请先拍照');
       return;
     }
 
     setUploading(true);
+    setUploadProgress('上传中...');
     try {
       await api.uploadRecord({
         mealType,
-        title: title.trim() || '今天吃得真香！',
+        title: title.trim() || generateTitle(mealType),
         photos,
       });
       
-      Alert.alert('成功', '记录已保存', [
-        { text: '确定', onPress: () => navigation.goBack() }
-      ]);
+      setUploadProgress('上传完成');
+      setTimeout(() => {
+        navigation.goBack();
+      }, 500);
     } catch (error: any) {
+      setUploadProgress('上传失败，点击重试');
       Alert.alert('上传失败', error.message);
     } finally {
       setUploading(false);
     }
   };
 
+  const handleMealSelect = (key: string) => {
+    setMealType(key);
+    setTitle(generateTitle(key));
+  };
+
   if (!permission) {
     return (
-      <View style={[styles.container, { backgroundColor: theme.background }]}>
-        <ActivityIndicator size="large" color={theme.accent} />
+      <View style={[styles.container, { backgroundColor: '#1a1a1a' }]}>
+        <ActivityIndicator size="large" color="#fff" />
       </View>
     );
   }
 
   if (!permission.granted) {
     return (
-      <View style={[styles.container, styles.center, { backgroundColor: theme.background }]}>
-        <Text style={[styles.permissionText, { color: theme.text }]}>
-          需要相机权限来拍摄美食
-        </Text>
-        <TouchableOpacity
-          style={[styles.permissionButton, { backgroundColor: theme.accent }]}
-          onPress={requestPermission}
-        >
+      <View style={[styles.container, styles.center, { backgroundColor: '#1a1a1a' }]}>
+        <Text style={styles.permissionText}>需要相机权限来拍摄美食</Text>
+        <TouchableOpacity style={styles.permissionButton} onPress={requestPermission}>
           <Text style={styles.permissionButtonText}>授予权限</Text>
         </TouchableOpacity>
       </View>
@@ -120,196 +129,117 @@ export const CameraScreen: React.FC<{ navigation: any; route: any }> = ({ naviga
   }
 
   return (
-    <View style={[styles.container, { backgroundColor: theme.background }]}>
-      {/* Header */}
-      <View style={[styles.header, { backgroundColor: theme.card }]}>
-        <TouchableOpacity onPress={() => navigation.goBack()} style={styles.headerButton}>
-          <Text style={[styles.headerButtonText, { color: theme.text }]}>取消</Text>
-        </TouchableOpacity>
-        <Text style={[styles.headerTitle, { color: theme.text }]}>记录美食</Text>
-        <View style={styles.headerButton} />
-      </View>
+    <View style={styles.container}>
+      {/* 关闭按钮 */}
+      <TouchableOpacity style={styles.closeBtn} onPress={() => navigation.goBack()}>
+        <Text style={styles.closeBtnText}>✕</Text>
+      </TouchableOpacity>
 
-      {/* Camera Preview */}
+      {/* 取景框 */}
       {photos.length < 9 && (
-        <View style={styles.cameraContainer}>
+        <View style={styles.viewfinder}>
           <CameraView
             ref={cameraRef}
             style={styles.camera}
             facing={facing}
           />
-          <View style={styles.cameraControls}>
-            <TouchableOpacity
-              style={[styles.flipButton, { backgroundColor: theme.card }]}
-              onPress={() => setFacing(facing === 'back' ? 'front' : 'back')}
-            >
-              <Text style={styles.flipButtonText}>🔄</Text>
-            </TouchableOpacity>
-            <TouchableOpacity
-              style={[styles.captureButton, { backgroundColor: theme.accent }]}
-              onPress={takePhoto}
-            >
-              <View style={styles.captureInner} />
-            </TouchableOpacity>
-            <TouchableOpacity
-              style={[styles.flipButton, { backgroundColor: theme.card }]}
-              onPress={pickImage}
-            >
-              <Text style={styles.flipButtonText}>🖼️</Text>
-            </TouchableOpacity>
-          </View>
+          <View style={styles.frameCorner} />
+          <View style={[styles.frameCorner, styles.frameCornerTR]} />
+          <View style={[styles.frameCorner, styles.frameCornerBL]} />
+          <View style={[styles.frameCorner, styles.frameCornerBR]} />
         </View>
       )}
 
-      {/* Photo Grid */}
-      {photos.length > 0 && (
-          <ScrollView style={styles.photoContainer} keyboardShouldPersistTaps="handled" keyboardVerticalOffset={Platform.OS === 'android' ? 100 : 0}>
-          <View style={styles.photoGrid}>
-            {photos.map((photo, index) => (
-              <View key={index} style={styles.photoWrapper}>
-                <Image source={{ uri: photo }} style={styles.photo} />
-                <TouchableOpacity
-                  style={[styles.removeButton, { backgroundColor: '#FF3B30' }]}
-                  onPress={() => removePhoto(index)}
-                >
-                  <Text style={styles.removeButtonText}>×</Text>
-                </TouchableOpacity>
-              </View>
-            ))}
-            
-            {/* Add More Photos */}
-            {photos.length < 9 && (
-              <TouchableOpacity style={[styles.addButton, { borderColor: theme.textSecondary }]} onPress={pickImage}>
-                <Text style={styles.addButtonText}>+</Text>
+      {/* 底部面板 */}
+      <View style={styles.bottomPanel}>
+        {/* 照片预览 */}
+        <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.thumbnailList}>
+          {photos.map((photo, index) => (
+            <View key={index} style={styles.thumbnailItem}>
+              <Image source={{ uri: photo }} style={styles.thumbnailImg} />
+              <TouchableOpacity style={styles.thumbnailDelete} onPress={() => removePhoto(index)}>
+                <Text style={styles.thumbnailDeleteText}>✕</Text>
               </TouchableOpacity>
-            )}
-          </View>
-
-          {/* Title Input */}
-          <View style={[styles.inputSection, { backgroundColor: theme.card }]}>
-            <Text style={[styles.label, { color: theme.text }]}>标题（选填）</Text>
-            <TextInput
-              style={[styles.input, { color: theme.text, borderColor: theme.textSecondary }]}
-              value={title}
-              onChangeText={setTitle}
-              placeholder="今天吃了什么？"
-              placeholderTextColor={theme.textSecondary}
-              maxLength={50}
-            />
-            <View style={styles.titleSuggestions}>
-              {defaultTitles.map((t, i) => (
-                <TouchableOpacity
-                  key={i}
-                  style={[styles.suggestionChip, { borderColor: theme.textSecondary }]}
-                  onPress={() => setTitle(t)}
-                >
-                  <Text style={[styles.suggestionText, { color: theme.textSecondary }]}>{t}</Text>
-                </TouchableOpacity>
-              ))}
             </View>
-          </View>
-
-          {/* Meal Type */}
-          <View style={[styles.mealTypeSection, { backgroundColor: theme.card }]}>
-            <Text style={[styles.label, { color: theme.text }]}>餐次</Text>
-            <View style={styles.mealTypeList}>
-              {['breakfast', 'lunch', 'dinner', 'snack'].map((type) => (
-                <TouchableOpacity
-                  key={type}
-                  style={[
-                    styles.mealTypeButton,
-                    { borderColor: theme.textSecondary },
-                    mealType === type && { backgroundColor: theme.accent, borderColor: theme.accent }
-                  ]}
-                  onPress={() => setMealType(type)}
-                >
-                  <Text style={styles.mealTypeEmoji}>{getMealTypeInfo(type).emoji}</Text>
-                  <Text style={[styles.mealTypeName, { color: mealType === type ? '#FFFFFF' : theme.text }]}>
-                    {getMealTypeInfo(type).name}
-                  </Text>
-                </TouchableOpacity>
-              ))}
-            </View>
-          </View>
-        </ScrollView>
-      )}
-
-      {photos.length === 0 && (
-          <ScrollView style={styles.photoContainer} keyboardShouldPersistTaps="handled" keyboardVerticalOffset={Platform.OS === 'android' ? 100 : 0}>
-          <View style={styles.photoGrid}>
-            <TouchableOpacity style={[styles.addButton, { borderColor: theme.textSecondary }]} onPress={pickImage}>
-              <Text style={styles.addButtonText}>+</Text>
+          ))}
+          {photos.length < 9 && (
+            <TouchableOpacity style={styles.addPhotoBtn} onPress={pickImage}>
+              <Text style={styles.addPhotoBtnText}>+</Text>
             </TouchableOpacity>
-          </View>
-
-          {/* Title Input */}
-          <View style={[styles.inputSection, { backgroundColor: theme.card }]}>
-            <Text style={[styles.label, { color: theme.text }]}>标题（选填）</Text>
-            <TextInput
-              style={[styles.input, { color: theme.text, borderColor: theme.textSecondary }]}
-              value={title}
-              onChangeText={setTitle}
-              placeholder="今天吃了什么？"
-              placeholderTextColor={theme.textSecondary}
-              maxLength={50}
-            />
-            <View style={styles.titleSuggestions}>
-              {defaultTitles.map((t, i) => (
-                <TouchableOpacity
-                  key={i}
-                  style={[styles.suggestionChip, { borderColor: theme.textSecondary }]}
-                  onPress={() => setTitle(t)}
-                >
-                  <Text style={[styles.suggestionText, { color: theme.textSecondary }]}>{t}</Text>
-                </TouchableOpacity>
-              ))}
-            </View>
-          </View>
-
-          {/* Meal Type */}
-          <View style={[styles.mealTypeSection, { backgroundColor: theme.card }]}>
-            <Text style={[styles.label, { color: theme.text }]}>餐次</Text>
-            <View style={styles.mealTypeList}>
-              {['breakfast', 'lunch', 'dinner', 'snack'].map((type) => (
-                <TouchableOpacity
-                  key={type}
-                  style={[
-                    styles.mealTypeButton,
-                    { borderColor: theme.textSecondary },
-                    mealType === type && { backgroundColor: theme.accent, borderColor: theme.accent }
-                  ]}
-                  onPress={() => setMealType(type)}
-                >
-                  <Text style={styles.mealTypeEmoji}>{getMealTypeInfo(type).emoji}</Text>
-                  <Text style={[styles.mealTypeName, { color: mealType === type ? '#FFFFFF' : theme.text }]}>
-                    {getMealTypeInfo(type).name}
-                  </Text>
-                </TouchableOpacity>
-              ))}
-            </View>
-          </View>
-        </ScrollView>
-      )}
-
-      {/* Submit Button */}
-      <View style={[styles.footer, { backgroundColor: theme.card }]}>
-        <TouchableOpacity
-          style={[
-            styles.submitButton,
-            { backgroundColor: photos.length > 0 && title.trim() ? theme.accent : '#CCCCCC' }
-          ]}
-          onPress={handleSubmit}
-          disabled={uploading || photos.length === 0}
-        >
-          {uploading ? (
-            <ActivityIndicator color="#FFFFFF" />
-          ) : (
-            <Text style={styles.submitButtonText}>
-              {uploading ? '上传中...' : '保存记录'}
-            </Text>
           )}
+        </ScrollView>
+
+        {/* 餐别选择 */}
+        <View style={styles.mealSection}>
+          <Text style={styles.sectionTitle}>选择餐别</Text>
+          <View style={styles.mealList}>
+            {mealTypes.map((meal) => (
+              <TouchableOpacity
+                key={meal.key}
+                style={[styles.mealItem, mealType === meal.key && styles.mealItemSelected]}
+                onPress={() => handleMealSelect(meal.key)}
+              >
+                <View style={[styles.mealIcon, { backgroundColor: mealType === meal.key ? meal.color : 'rgba(255,255,255,0.12)' }]}>
+                  <Text style={styles.mealEmoji}>{meal.emoji}</Text>
+                </View>
+                <Text style={[styles.mealLabel, { color: mealType === meal.key ? '#fff' : 'rgba(255,255,255,0.7)' }]}>
+                  {meal.label}
+                </Text>
+              </TouchableOpacity>
+            ))}
+          </View>
+        </View>
+
+        {/* 标题 */}
+        <TouchableOpacity style={styles.titleSection}>
+          <Text style={styles.sectionTitle}>标题</Text>
+          <View style={styles.titleBar}>
+            <Text style={styles.titleText}>{title}</Text>
+            <View style={styles.editBtn}>
+              <Text style={styles.editBtnText}>编辑</Text>
+            </View>
+          </View>
         </TouchableOpacity>
+
+        {/* 底部控制栏 */}
+        <View style={styles.controls}>
+          <TouchableOpacity style={styles.controlBtn} onPress={pickImage}>
+            <View style={styles.controlIconWrapper}>
+              <Text style={styles.controlIcon}>🖼️</Text>
+            </View>
+            <Text style={styles.controlLabel}>相册</Text>
+          </TouchableOpacity>
+          
+          <TouchableOpacity style={styles.captureBtn} onPress={takePhoto}>
+            <View style={styles.captureInner} />
+          </TouchableOpacity>
+          
+          <TouchableOpacity 
+            style={[styles.controlBtn, photos.length === 0 && styles.controlBtnDisabled]} 
+            onPress={handleSave}
+            disabled={photos.length === 0 || uploading}
+          >
+            <View style={styles.controlIconWrapper}>
+              <Text style={styles.controlIcon}>✔</Text>
+            </View>
+            <Text style={styles.controlLabel}>保存</Text>
+          </TouchableOpacity>
+        </View>
       </View>
+
+      {/* 上传遮罩 */}
+      {uploading && (
+        <View style={styles.uploadOverlay}>
+          <View style={styles.uploadCard}>
+            {uploadProgress === '上传完成' ? (
+              <Text style={styles.successIcon}>✓</Text>
+            ) : (
+              <ActivityIndicator size="small" color="#FF8C42" />
+            )}
+            <Text style={styles.statusText}>{uploadProgress}</Text>
+          </View>
+        </View>
+      )}
     </View>
   );
 };
@@ -317,206 +247,283 @@ export const CameraScreen: React.FC<{ navigation: any; route: any }> = ({ naviga
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+    backgroundColor: '#1a1a1a',
   },
   center: {
     justifyContent: 'center',
     alignItems: 'center',
   },
   permissionText: {
+    color: '#fff',
     fontSize: 16,
     marginBottom: 20,
     textAlign: 'center',
     paddingHorizontal: 40,
   },
   permissionButton: {
+    backgroundColor: '#FF8C42',
     paddingHorizontal: 24,
     paddingVertical: 12,
     borderRadius: 24,
   },
   permissionButtonText: {
-    color: '#FFFFFF',
+    color: '#fff',
     fontSize: 16,
     fontWeight: '600',
   },
-  header: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
+  closeBtn: {
+    position: 'absolute',
+    top: 50,
+    left: 12,
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: 'rgba(0,0,0,0.4)',
     alignItems: 'center',
-    paddingTop: 50,
-    paddingBottom: 16,
-    paddingHorizontal: 16,
+    justifyContent: 'center',
+    zIndex: 15,
   },
-  headerButton: {
-    width: 60,
-  },
-  headerButtonText: {
-    fontSize: 16,
-  },
-  headerTitle: {
+  closeBtnText: {
+    color: '#fff',
     fontSize: 18,
-    fontWeight: '600',
   },
-  cameraContainer: {
-    height: 300,
-    margin: 16,
-    borderRadius: 16,
+  viewfinder: {
+    width: VIEWFINDER_SIZE,
+    height: VIEWFINDER_SIZE,
+    alignSelf: 'center',
+    marginTop: 90,
+    borderRadius: 12,
     overflow: 'hidden',
+    position: 'relative',
   },
   camera: {
     flex: 1,
   },
-  cameraControls: {
+  frameCorner: {
     position: 'absolute',
-    bottom: 16,
+    width: 24,
+    height: 24,
+    borderColor: '#fff',
+    borderStyle: 'solid',
+    top: 8,
+    left: 8,
+    borderWidth: 3,
+    borderTopWidth: 3,
+    borderLeftWidth: 3,
+    borderTopLeftRadius: 6,
+  },
+  frameCornerTR: {
+    left: undefined,
+    right: 8,
+    borderLeftWidth: 0,
+    borderRightWidth: 3,
+    borderTopRightRadius: 6,
+    borderTopLeftRadius: 0,
+  },
+  frameCornerBL: {
+    top: undefined,
+    bottom: 8,
+    borderTopWidth: 0,
+    borderBottomWidth: 3,
+    borderBottomLeftRadius: 6,
+  },
+  frameCornerBR: {
+    top: undefined,
+    left: undefined,
+    right: 8,
+    bottom: 8,
+    borderTopWidth: 0,
+    borderLeftWidth: 0,
+    borderBottomWidth: 3,
+    borderRightWidth: 3,
+    borderBottomRightRadius: 6,
+  },
+  bottomPanel: {
+    position: 'absolute',
+    bottom: 0,
     left: 0,
     right: 0,
+    paddingBottom: 34,
+    backgroundColor: 'rgba(0,0,0,0.6)',
+    paddingTop: 10,
+    paddingHorizontal: 12,
+  },
+  thumbnailList: {
+    maxHeight: 52,
+    marginBottom: 5,
+  },
+  thumbnailItem: {
+    width: 50,
+    height: 50,
+    marginRight: 8,
+    borderRadius: 8,
+    overflow: 'hidden',
+  },
+  thumbnailImg: {
+    width: '100%',
+    height: '100%',
+  },
+  thumbnailDelete: {
+    position: 'absolute',
+    top: 2,
+    right: 2,
+    width: 18,
+    height: 18,
+    borderRadius: 9,
+    backgroundColor: 'rgba(0,0,0,0.7)',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  thumbnailDeleteText: {
+    color: '#fff',
+    fontSize: 11,
+  },
+  addPhotoBtn: {
+    width: 50,
+    height: 50,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.3)',
+    borderStyle: 'dashed',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  addPhotoBtnText: {
+    color: 'rgba(255,255,255,0.6)',
+    fontSize: 24,
+  },
+  mealSection: {
+    marginTop: 10,
+  },
+  sectionTitle: {
+    fontSize: 10,
+    fontWeight: '600',
+    color: 'rgba(255,255,255,0.6)',
+    textTransform: 'uppercase',
+    letterSpacing: 1,
+    marginBottom: 4,
+  },
+  mealList: {
     flexDirection: 'row',
     justifyContent: 'center',
-    alignItems: 'center',
-    gap: 30,
+    gap: 8,
   },
-  flipButton: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
+  mealItem: {
+    alignItems: 'center',
+    paddingHorizontal: 1,
+  },
+  mealItemSelected: {},
+  mealIcon: {
+    width: 30,
+    height: 30,
+    borderRadius: 8,
+    alignItems: 'center',
     justifyContent: 'center',
+  },
+  mealEmoji: {
+    fontSize: 16,
+  },
+  mealLabel: {
+    fontSize: 11,
+    fontWeight: '500',
+    marginTop: 3,
+  },
+  titleSection: {
+    marginTop: 5,
+  },
+  titleBar: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingVertical: 7,
+    paddingHorizontal: 9,
+    backgroundColor: 'rgba(255,255,255,0.08)',
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.08)',
+  },
+  titleText: {
+    color: '#fff',
+    fontSize: 13,
+    fontWeight: '500',
+  },
+  editBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    color: 'rgba(255,255,255,0.65)',
+    fontSize: 12,
+  },
+  editBtnText: {
+    color: 'rgba(255,255,255,0.65)',
+    fontSize: 12,
+  },
+  controls: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-around',
+    marginTop: 10,
+  },
+  controlBtn: {
     alignItems: 'center',
   },
-  flipButtonText: {
+  controlBtnDisabled: {
+    opacity: 0.4,
+  },
+  controlIconWrapper: {
+    width: 45,
+    height: 45,
+    borderRadius: 22.5,
+    backgroundColor: 'rgba(255,255,255,0.15)',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  controlIcon: {
     fontSize: 20,
+    color: '#fff',
   },
-  captureButton: {
-    width: 64,
-    height: 64,
-    borderRadius: 32,
-    justifyContent: 'center',
+  controlLabel: {
+    color: 'rgba(255,255,255,0.8)',
+    fontSize: 10,
+    fontWeight: '500',
+    marginTop: 3,
+  },
+  captureBtn: {
+    width: 68,
+    height: 68,
+    borderRadius: 34,
+    backgroundColor: 'rgba(255,255,255,0.2)',
     alignItems: 'center',
+    justifyContent: 'center',
   },
   captureInner: {
     width: 52,
     height: 52,
     borderRadius: 26,
-    backgroundColor: '#FFFFFF',
+    backgroundColor: '#fff',
   },
-  photoContainer: {
-    flex: 1,
-  },
-  photoGrid: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    padding: 16,
-  },
-  photoWrapper: {
-    width: '31%',
-    margin: '1%',
-    aspectRatio: 1,
-  },
-  photo: {
-    width: '100%',
-    height: '100%',
-    borderRadius: 8,
-  },
-  removeButton: {
-    position: 'absolute',
-    top: 4,
-    right: 4,
-    width: 24,
-    height: 24,
-    borderRadius: 12,
-    justifyContent: 'center',
+  uploadOverlay: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: 'rgba(0,0,0,0.55)',
     alignItems: 'center',
+    justifyContent: 'center',
+    zIndex: 30,
   },
-  removeButtonText: {
-    color: '#FFFFFF',
-    fontSize: 16,
+  uploadCard: {
+    backgroundColor: '#1f1f1f',
+    padding: 20,
+    borderRadius: 12,
+    alignItems: 'center',
+    minWidth: 140,
+  },
+  successIcon: {
+    fontSize: 28,
+    color: '#4CAF50',
     fontWeight: 'bold',
   },
-  addButton: {
-    width: '31%',
-    margin: '1%',
-    aspectRatio: 1,
-    borderWidth: 2,
-    borderStyle: 'dashed',
-    borderRadius: 8,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  addButtonText: {
-    fontSize: 32,
-    color: '#999999',
-  },
-  inputSection: {
-    margin: 16,
-    marginTop: 0,
-    padding: 16,
-    borderRadius: 12,
-  },
-  label: {
+  statusText: {
+    color: '#fff',
     fontSize: 14,
-    fontWeight: '600',
-    marginBottom: 8,
-  },
-  input: {
-    height: 44,
-    borderWidth: 1,
-    borderRadius: 8,
-    paddingHorizontal: 12,
-    fontSize: 16,
-  },
-  mealTypeSection: {
-    margin: 16,
-    marginTop: 0,
-    padding: 16,
-    borderRadius: 12,
-  },
-  mealTypeList: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-  },
-  mealTypeButton: {
-    flex: 1,
-    alignItems: 'center',
-    padding: 12,
-    marginHorizontal: 4,
-    borderRadius: 8,
-    borderWidth: 1,
-  },
-  mealTypeEmoji: {
-    fontSize: 24,
-    marginBottom: 4,
-  },
-  mealTypeName: {
-    fontSize: 12,
-  },
-  footer: {
-    padding: 16,
-    paddingBottom: 34,
-  },
-  submitButton: {
-    height: 48,
-    borderRadius: 24,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  submitButtonText: {
-    color: '#FFFFFF',
-    fontSize: 18,
-    fontWeight: '600',
-  },
-  titleSuggestions: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
     marginTop: 8,
-    gap: 8,
-  },
-  suggestionChip: {
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 16,
-    borderWidth: 1,
-  },
-  suggestionText: {
-    fontSize: 12,
   },
 });
 

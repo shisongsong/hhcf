@@ -5,88 +5,65 @@ import {
   StyleSheet,
   ScrollView,
   TouchableOpacity,
-  Linking,
+  Alert,
 } from 'react-native';
 import { useApp } from '../context/AppContext';
 
+const AGREEMENT_TEXT = `欢迎使用好好吃饭！
+
+我们非常重视您的隐私保护。本应用尊重并保护您的个人隐私。
+
+我们收集的信息：
+• 您拍摄的照片（用于记录餐饮）
+• 您的位置信息（用于推荐附近美食）
+
+我们如何使用您的信息：
+• 提供餐饮记录服务
+• 改进我们的服务
+• 与您沟通
+
+信息存储：
+• 您的照片存储在安全的云服务器上
+• 我们不会将您的信息分享给第三方
+
+使用本应用即表示您同意我们的隐私政策。`;
+
 export const PrivacyScreen: React.FC<{ navigation: any }> = ({ navigation }) => {
-  const { theme, setPrivacyAgreed } = useApp();
+  const { theme, agreeToPrivacy } = useApp();
 
   const handleAgree = async () => {
-    await setPrivacyAgreed(true);
-    navigation.replace('Login');
-  };
-
-  const handleDisagree = () => {
+    await agreeToPrivacy();
     navigation.goBack();
   };
 
+  const handleDisagree = () => {
+    Alert.alert('提示', '您需要同意隐私协议才能使用本应用', [
+      { text: '返回', onPress: () => navigation.goBack() }
+    ]);
+  };
+
   return (
-    <ScrollView
-      style={[styles.container, { backgroundColor: theme.background }]}
-      contentContainerStyle={styles.content}
-    >
-      <Text style={[styles.title, { color: theme.text }]}>隐私政策</Text>
+    <View style={[styles.container, { backgroundColor: theme.bgGradient?.[0] || theme.background }]}>
+      <View style={styles.header}>
+        <Text style={[styles.title, { color: theme.textPrimary }]}>隐私协议</Text>
+      </View>
 
-      <Text style={[styles.text, { color: theme.textSecondary }]}>
-        感谢您使用「好好吃饭」！为了更好地保护您的个人隐私，请您仔细阅读以下隐私政策：
-      </Text>
+      <ScrollView style={[styles.content, { backgroundColor: '#fff' }]}>
+        <Text style={styles.agreementText}>{AGREEMENT_TEXT}</Text>
+      </ScrollView>
 
-      <Text style={[styles.sectionTitle, { color: theme.text }]}>一、信息收集</Text>
-      <Text style={[styles.text, { color: theme.textSecondary }]}>
-        我们可能会收集您在使用服务时主动提供的信息，包括：
-        {'\n'}• 手机号码（用于账号注册和登录）
-        {'\n'}• 拍摄的照片（用于记录餐饮）
-        {'n'}• 位置信息（用于个性化推荐，可选）
-      </Text>
-
-      <Text style={[styles.sectionTitle, { color: theme.text }]}>二、信息使用</Text>
-      <Text style={[styles.text, { color: theme.textSecondary }]}>
-        我们收集的信息将用于：
-        {'\n'}• 提供餐饮记录服务
-        {'\n'}• 改善用户体验
-        {'\n'}• 数据统计分析
-      </Text>
-
-      <Text style={[styles.sectionTitle, { color: theme.text }]}>三、信息保护</Text>
-      <Text style={[styles.text, { color: theme.textSecondary }]}>
-        我们采用行业标准的安全措施保护您的个人信息，包括加密存储、访问控制等。
-      </Text>
-
-      <Text style={[styles.sectionTitle, { color: theme.text }]}>四、第三方服务</Text>
-      <Text style={[styles.text, { color: theme.textSecondary }]}>
-        本服务可能包含第三方链接，我们不对第三方行为负责。
-      </Text>
-
-      <Text style={[styles.sectionTitle, { color: theme.text }]}>五、用户权利</Text>
-      <Text style={[styles.text, { color: theme.textSecondary }]}>
-        您有权访问、更正、删除您的个人信息。如需帮助，请联系我们。
-      </Text>
-
-      <Text style={[styles.sectionTitle, { color: theme.text }]}>六、联系我们</Text>
-      <Text style={[styles.text, { color: theme.textSecondary }]}>
-        如有疑问，请通过应用内反馈联系我们。
-      </Text>
-
-      <Text style={[styles.lastUpdate, { color: theme.textSecondary }]}>
-        最后更新：2026年2月25日
-      </Text>
-
-      <View style={styles.buttons}>
-        <TouchableOpacity
-          style={[styles.button, styles.disagreeButton, { borderColor: theme.textSecondary }]}
-          onPress={handleDisagree}
-        >
-          <Text style={[styles.buttonText, { color: theme.textSecondary }]}>不同意</Text>
+      <View style={styles.footer}>
+        <TouchableOpacity style={[styles.btn, styles.btnDisagree]} onPress={handleDisagree}>
+          <Text style={[styles.btnText, { color: theme.textSecondary }]}>不同意</Text>
         </TouchableOpacity>
-        <TouchableOpacity
-          style={[styles.button, styles.agreeButton, { backgroundColor: theme.accent }]}
+        <TouchableOpacity 
+          style={[styles.btn, styles.btnAgree, { backgroundColor: theme.primary }]} 
           onPress={handleAgree}
         >
-          <Text style={[styles.buttonText, { color: '#FFFFFF' }]}>同意</Text>
+          <Text style={[styles.btnText, { color: '#fff' }]}>同意</Text>
         </TouchableOpacity>
       </View>
-    </ScrollView>
+    </View>
   );
 };
 
@@ -94,49 +71,43 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
   },
-  content: {
-    padding: 24,
+  header: {
     paddingTop: 60,
+    paddingBottom: 20,
+    alignItems: 'center',
   },
   title: {
     fontSize: 24,
-    fontWeight: 'bold',
-    textAlign: 'center',
-    marginBottom: 24,
-  },
-  sectionTitle: {
-    fontSize: 16,
     fontWeight: '600',
-    marginTop: 20,
-    marginBottom: 8,
   },
-  text: {
-    fontSize: 14,
-    lineHeight: 22,
-  },
-  lastUpdate: {
-    fontSize: 12,
-    textAlign: 'center',
-    marginTop: 32,
-  },
-  buttons: {
-    flexDirection: 'row',
-    marginTop: 32,
-    marginBottom: 40,
-  },
-  button: {
+  content: {
     flex: 1,
-    height: 48,
-    borderRadius: 24,
-    justifyContent: 'center',
+    margin: 20,
+    borderRadius: 16,
+    padding: 20,
+  },
+  agreementText: {
+    fontSize: 15,
+    lineHeight: 24,
+    color: '#333',
+  },
+  footer: {
+    flexDirection: 'row',
+    padding: 20,
+    paddingBottom: 40,
+    gap: 12,
+  },
+  btn: {
+    flex: 1,
+    paddingVertical: 14,
+    borderRadius: 12,
     alignItems: 'center',
-    marginHorizontal: 8,
   },
-  disagreeButton: {
-    borderWidth: 1,
+  btnDisagree: {
+    backgroundColor: '#f5f5f5',
   },
-  agreeButton: {},
-  buttonText: {
+  btnAgree: {},
+  btnText: {
     fontSize: 16,
     fontWeight: '600',
   },
