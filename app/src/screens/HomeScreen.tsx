@@ -101,12 +101,6 @@ export const HomeScreen: React.FC<{ navigation: any }> = ({ navigation }) => {
       console.error('Load meals error:', error);
     }
   };
-      
-      setTodayMeals(meals);
-    } catch (error) {
-      console.error('Load meals error:', error);
-    }
-  };
 
   const onRefresh = useCallback(async () => {
     setRefreshing(true);
