@@ -29,21 +29,15 @@ const AGREEMENT_TEXT = `欢迎使用好好吃饭！
 使用本应用即表示您同意我们的隐私政策。`;
 
 export const PrivacyScreen: React.FC<{ navigation: any }> = ({ navigation }) => {
-  const { theme, agreeToPrivacy, isLoggedIn } = useApp();
+  const { theme, agreeToPrivacy } = useApp();
 
   const handleAgree = async () => {
     await agreeToPrivacy();
-    if (isLoggedIn) {
-      navigation.reset({
-        index: 0,
-        routes: [{ name: 'Main' }],
-      });
-    } else {
-      navigation.reset({
-        index: 0,
-        routes: [{ name: 'Login' }],
-      });
-    }
+    // 同意后直接跳转到登录页，让登录页检查登录状态
+    navigation.reset({
+      index: 0,
+      routes: [{ name: 'Login' }],
+    });
   };
 
   const handleDisagree = () => {

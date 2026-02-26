@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
@@ -15,11 +15,21 @@ import { useApp } from '../context/AppContext';
 import api from '../api';
 
 export const LoginScreen: React.FC<{ navigation: any }> = ({ navigation }) => {
-  const { theme, setIsLoggedIn } = useApp();
+  const { theme, setIsLoggedIn, isLoggedIn } = useApp();
   const [phone, setPhone] = useState('');
   const [code, setCode] = useState('');
   const [loading, setLoading] = useState(false);
   const [countdown, setCountdown] = useState(0);
+
+  // 如果已经登录，直接跳转
+  useEffect(() => {
+    if (isLoggedIn) {
+      navigation.reset({
+        index: 0,
+        routes: [{ name: 'Main' }],
+      });
+    }
+  }, [isLoggedIn, navigation]);
 
   const handleSendCode = async () => {
     if (!phone || phone.length !== 11) {

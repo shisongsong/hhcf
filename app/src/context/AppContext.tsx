@@ -19,57 +19,63 @@ interface AppContextType {
 const AppContext = createContext<AppContextType | undefined>(undefined);
 
 export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
-  const [theme, setThemeState] = useState<Theme>(getActiveTheme());
+  const [theme] = useState<Theme>(getActiveTheme());
   const [token, setToken] = useState<string | null>(null);
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [isAgreed, setIsAgreed] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
-  const [apiConnected, setApiConnected] = useState(true);
+  const [apiConnected] = useState(true);
 
   useEffect(() => {
-    initApp();
+    // 异步加载存储的数据，不阻塞 UI
+    const loadStoredData = async () => {
+      try {
+        const [storedToken, storedAgreed] = await Promise.all([
+          AsyncStorage.getItem('token'),
+          AsyncStorage.getItem('privacyAgreed'),
+        ]);
+
+        if (storedToken) {
+          setToken(storedToken);
+          api.setToken(storedToken);
+          setIsLoggedIn(true);
+        }
+
+        if (storedAgreed === 'true') {
+          setIsAgreed(true);
+        }
+      } catch (error) {
+        console.error('加载存储数据失败:', error);
+      } finally {
+        // 无论成功失败，都结束 loading 状态
+        setIsLoading(false);
+      }
+    };
+
+    loadStoredData();
   }, []);
 
-  const initApp = async () => {
-    try {
-      const [storedToken, storedAgreed] = await Promise.all([
-        AsyncStorage.getItem('token'),
-        AsyncStorage.getItem('privacyAgreed'),
-      ]);
-
-      if (storedToken) {
-        setToken(storedToken);
-        api.setToken(storedToken);
-        setIsLoggedIn(true);
-      }
-
-      if (storedAgreed === 'true') {
-        setIsAgreed(true);
-      }
-    } catch (error) {
-      console.error('Init app error:', error);
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
   const setTheme = (newTheme: Theme) => {
-    setThemeState(newTheme);
+    // 可以在这里保存主题偏好
   };
 
   const handleSetIsLoggedIn = (loggedIn: boolean) => {
     setIsLoggedIn(loggedIn);
   };
 
-  const logout = () => {
+  const logout = async () => {
+    try {
+      await AsyncStorage.removeItem('token');
+    } catch (e) {}
     setToken(null);
     api.setToken(null);
     setIsLoggedIn(false);
-    AsyncStorage.removeItem('token');
   };
 
   const agreeToPrivacy = async () => {
-    await AsyncStorage.setItem('privacyAgreed', 'true');
+    try {
+      await AsyncStorage.setItem('privacyAgreed', 'true');
+    } catch (e) {}
     setIsAgreed(true);
   };
 
