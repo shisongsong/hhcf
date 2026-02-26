@@ -30,21 +30,34 @@ interface SectionData {
 }
 
 export const RecordsScreen: React.FC<{ navigation: any }> = ({ navigation }) => {
-  const { theme, isLoggedIn, isAgreed } = useApp();
+  const { theme, isLoggedIn, isAgreed, isLoading } = useApp();
   const [records, setRecords] = useState<MealRecord[]>([]);
   const [refreshing, setRefreshing] = useState(false);
   const [viewMode, setViewMode] = useState<'day' | 'week' | 'month'>('day');
+  const [loaded, setLoaded] = useState(false);
 
   useEffect(() => {
-    if (isAgreed && isLoggedIn) {
+    // Wait for loading to complete and be logged in
+    if (!isLoading && isLoggedIn && isAgreed && !loaded) {
       loadRecords();
+      setLoaded(true);
     }
-  }, [isAgreed, isLoggedIn]);
+  }, [isLoading, isLoggedIn, isAgreed, loaded]);
 
   const loadRecords = async () => {
     try {
+      console.log('加载记录...');
       const data = await api.getRecords(1, 100);
-      const allRecords = data.data?.records || data.data || [];
+      console.log('API返回:', JSON.stringify(data).substring(0, 200));
+      
+      let allRecords = [];
+      if (data.data?.records) {
+        allRecords = data.data.records;
+      } else if (data.data) {
+        allRecords = Array.isArray(data.data) ? data.data : [];
+      }
+      
+      console.log('记录数量:', allRecords.length);
       setRecords(allRecords);
     } catch (error) {
       console.error('Load records error:', error);
