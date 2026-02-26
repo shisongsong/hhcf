@@ -119,7 +119,7 @@ export const CameraScreen: React.FC<{ navigation: any; route: any }> = ({ naviga
   }
 
   return (
-    <View style={[styles.container, { backgroundColor: theme.background }]}>
+    <View style={[styles.container, { backgroundColor: theme.background }]} keyboardShouldPersistTaps="handled">
       {/* Header */}
       <View style={[styles.header, { backgroundColor: theme.card }]}>
         <TouchableOpacity onPress={() => navigation.goBack()} style={styles.headerButton}>

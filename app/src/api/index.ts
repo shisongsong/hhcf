@@ -163,7 +163,9 @@ class ApiService {
       formData.append('date', data.date);
     }
 
-    const headers: Record<string, string> = {};
+    const headers: Record<string, string> = {
+      'Content-Type': 'multipart/form-data',
+    };
     if (this.token) {
       headers['Authorization'] = `Bearer ${this.token}`;
     }
@@ -173,7 +175,16 @@ class ApiService {
       headers,
       body: formData,
     });
-    const result = await response.json();
+    
+    let result;
+    const contentType = response.headers.get('content-type');
+    if (contentType && contentType.includes('application/json')) {
+      result = await response.json();
+    } else {
+      const text = await response.text();
+      console.error('Non-JSON response:', text);
+      throw new Error('服务器响应异常，请稍后重试');
+    }
     if (result.success) {
       return result;
     }
