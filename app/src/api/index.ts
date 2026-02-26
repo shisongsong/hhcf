@@ -132,11 +132,18 @@ class ApiService {
   }
 
   async getTodayMeals() {
-    return this.request('/api/records?type=today');
+    const data = await this.request('/api/records');
+    const records = data.data || [];
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const todayStart = today.getTime();
+    const todayEnd = todayStart + 24 * 60 * 60 * 1000;
+    const todayRecords = records.filter((r: any) => r.timestamp >= todayStart && r.timestamp < todayEnd);
+    return { data: todayRecords };
   }
 
   async getRecords(page = 1, limit = 20) {
-    return this.request(`/api/records?page=${page}&limit=${limit}`);
+    return this.request(`/api/records?limit=${limit}`);
   }
 
   async getRecord(id: string) {

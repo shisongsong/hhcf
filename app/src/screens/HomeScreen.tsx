@@ -20,7 +20,8 @@ interface MealRecord {
   id: string;
   mealType: string;
   title: string;
-  photos: string[];
+  imageUrl: string[];
+  timestamp: number;
   createdAt: string;
 }
 
@@ -153,9 +154,9 @@ export const HomeScreen: React.FC<{ navigation: any }> = ({ navigation }) => {
               style={[styles.recordCard, { backgroundColor: theme.card }]}
               onPress={() => handleMealRecordPress(record)}
             >
-              {record.photos?.[0] && (
+              {record.imageUrl?.[0] && (
                 <Image
-                  source={{ uri: record.photos[0] }}
+                  source={{ uri: record.imageUrl[0] }}
                   style={styles.recordImage}
                 />
               )}
