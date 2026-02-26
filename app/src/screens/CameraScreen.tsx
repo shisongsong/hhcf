@@ -9,6 +9,9 @@ import {
   ScrollView,
   TextInput,
   ActivityIndicator,
+  KeyboardAvoidingView,
+  Platform,
+  Keyboard,
 } from 'react-native';
 import { CameraView, useCameraPermissions } from 'expo-camera';
 import * as ImagePicker from 'expo-image-picker';
@@ -119,7 +122,11 @@ export const CameraScreen: React.FC<{ navigation: any; route: any }> = ({ naviga
   }
 
   return (
-    <View style={[styles.container, { backgroundColor: theme.background }]} keyboardShouldPersistTaps="handled">
+    <KeyboardAvoidingView 
+      style={[styles.container, { backgroundColor: theme.background }]} 
+      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+      keyboardVerticalOffset={0}
+    >
       {/* Header */}
       <View style={[styles.header, { backgroundColor: theme.card }]}>
         <TouchableOpacity onPress={() => navigation.goBack()} style={styles.headerButton}>
@@ -309,7 +316,7 @@ export const CameraScreen: React.FC<{ navigation: any; route: any }> = ({ naviga
           )}
         </TouchableOpacity>
       </View>
-    </View>
+    </KeyboardAvoidingView>
   );
 };
 

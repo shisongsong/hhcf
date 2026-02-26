@@ -149,9 +149,12 @@ class ApiService {
     photos: string[];
     date?: string;
   }) {
+    const headers: Record<string, string> = {};
+    if (this.token) {
+      headers['Authorization'] = `Bearer ${this.token}`;
+    }
+
     const formData = new FormData();
-    formData.append('mealType', data.mealType);
-    formData.append('title', data.title);
     data.photos.forEach((photo) => {
       formData.append('files', {
         uri: photo,
@@ -159,36 +162,47 @@ class ApiService {
         name: 'photo.jpg',
       } as any);
     });
-    if (data.date) {
-      formData.append('date', data.date);
-    }
 
-    const headers: Record<string, string> = {
-      'Content-Type': 'multipart/form-data',
-    };
-    if (this.token) {
-      headers['Authorization'] = `Bearer ${this.token}`;
-    }
-
-    const response = await fetch(`${API_BASE}/api/upload`, {
+    const uploadResponse = await fetch(`${API_BASE}/api/upload`, {
       method: 'POST',
       headers,
       body: formData,
     });
     
-    let result;
-    const contentType = response.headers.get('content-type');
-    if (contentType && contentType.includes('application/json')) {
-      result = await response.json();
-    } else {
-      const text = await response.text();
+    let uploadResult;
+    try {
+      uploadResult = await uploadResponse.json();
+    } catch {
+      const text = await uploadResponse.text();
       console.error('Non-JSON response:', text);
-      throw new Error('服务器响应异常，请稍后重试');
+      throw new Error('上传图片失败，请重试');
     }
-    if (result.success) {
-      return result;
+    
+    if (!uploadResult.success) {
+      throw new Error(uploadResult.error || '上传图片失败');
     }
-    throw new Error(result.error || '上传失败');
+
+    const { imageUrls } = uploadResult.data;
+    
+    const recordResponse = await fetch(`${API_BASE}/api/records`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        ...headers,
+      },
+      body: JSON.stringify({
+        imageUrls,
+        mealType: data.mealType,
+        title: data.title,
+        timestamp: data.date ? new Date(data.date).getTime() : undefined,
+      }),
+    });
+
+    const recordResult = await recordResponse.json();
+    if (recordResult.success) {
+      return recordResult;
+    }
+    throw new Error(recordResult.error || '保存记录失败');
   }
 
   async deleteRecord(id: string) {
