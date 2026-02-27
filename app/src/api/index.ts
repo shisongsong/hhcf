@@ -51,9 +51,14 @@ class ApiService {
   }
 
   async request<T = any>(options: RequestOptions): Promise<T> {
+    const url = typeof options === 'string' ? options : options.url;
+    if (!url) {
+      throw new Error('请求URL为空');
+    }
+    
     const headers: Record<string, string> = {
       'Content-Type': 'application/json',
-      ...options.headers,
+      ...(typeof options === 'object' ? options.headers : {}),
     };
 
     if (this.token) {
@@ -64,13 +69,13 @@ class ApiService {
     const timeoutId = setTimeout(() => controller.abort(), 15000);
 
     try {
-      console.log('API请求:', options.method || 'GET', options.url);
+      console.log('API请求:', options.method || 'GET', url);
       console.log('Token:', this.token ? '已设置' : '未设置');
       
-      const response = await fetch(`${API_BASE}${options.url}`, {
-        method: options.method || 'GET',
+      const response = await fetch(`${API_BASE}${url}`, {
+        method: typeof options === 'object' ? options.method || 'GET' : 'GET',
         headers,
-        body: options.data ? JSON.stringify(options.data) : undefined,
+        body: typeof options === 'object' && options.data ? JSON.stringify(options.data) : undefined,
         signal: controller.signal,
       });
 
@@ -97,7 +102,7 @@ class ApiService {
       }
       // Show more details about the error
       const errorMsg = error.message || error.toString() || '未知错误';
-      throw new Error(`网络错误: ${errorMsg}\nURL: ${API_BASE}${options.url}`);
+      throw new Error(`网络错误: ${errorMsg}\nURL: ${API_BASE}${url}`);
     }
   }
 
