@@ -42,11 +42,11 @@ class ApiService {
       }
       return { success: false, message: 'HTTP ' + response.status };
     } catch (error: any) {
-      console.log('连接错误:', error.message);
+      console.log('连接错误:', error.name, error.message);
       if (error.name === 'AbortError') {
-        return { success: false, message: '连接超时' };
+        return { success: false, message: '连接超时(10秒)' };
       }
-      return { success: false, message: error.message };
+      return { success: false, message: `${error.name || '错误'}: ${error.message || error.toString()}` };
     }
   }
 
@@ -93,11 +93,11 @@ class ApiService {
       clearTimeout(timeoutId);
       console.error('API Error:', error.name, error.message);
       if (error.name === 'AbortError') {
-        throw new Error('请求超时，请检查网络');
+        throw new Error('请求超时(15秒)，请检查网络');
       }
       // Show more details about the error
-      const errorMsg = error.message || '网络错误';
-      throw new Error(`网络错误: ${errorMsg}`);
+      const errorMsg = error.message || error.toString() || '未知错误';
+      throw new Error(`网络错误: ${errorMsg}\nURL: ${API_BASE}${options.url}`);
     }
   }
 
