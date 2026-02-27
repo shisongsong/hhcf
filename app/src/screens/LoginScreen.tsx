@@ -63,15 +63,25 @@ export const LoginScreen: React.FC<{ navigation: any }> = ({ navigation }) => {
 
     setLoading(true);
     try {
+      console.log('开始登录, phone =', phone);
       const result = await api.phoneLogin(phone, code);
+      console.log('登录成功, token =', result.token.substring(0, 20) + '...');
+      
       await AsyncStorage.setItem('token', result.token);
+      console.log('Token已存储到AsyncStorage');
+      
       api.setToken(result.token);
+      console.log('Token已设置到api');
+      
       setIsLoggedIn(true);
+      console.log('已设置登录状态');
+      
       navigation.reset({
         index: 0,
         routes: [{ name: 'Main' }],
       });
     } catch (error: any) {
+      console.error('登录失败:', error);
       Alert.alert('登录失败', error.message);
     } finally {
       setLoading(false);

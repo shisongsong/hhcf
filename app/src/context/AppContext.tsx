@@ -30,25 +30,31 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     // 异步加载存储的数据，不阻塞 UI
     const loadStoredData = async () => {
       try {
+        console.log('AppContext: 开始加载存储数据...');
         const [storedToken, storedAgreed] = await Promise.all([
           AsyncStorage.getItem('token'),
           AsyncStorage.getItem('privacyAgreed'),
         ]);
 
+        console.log('AppContext: token =', storedToken ? '存在' : '不存在');
+        console.log('AppContext: privacyAgreed =', storedAgreed);
+
         if (storedToken) {
           setToken(storedToken);
           api.setToken(storedToken);
           setIsLoggedIn(true);
+          console.log('AppContext: 已设置登录状态');
         }
 
         if (storedAgreed === 'true') {
           setIsAgreed(true);
         }
       } catch (error) {
-        console.error('加载存储数据失败:', error);
+        console.error('AppContext: 加载存储数据失败:', error);
       } finally {
         // 无论成功失败，都结束 loading 状态
         setIsLoading(false);
+        console.log('AppContext: 加载完成, isLoading = false');
       }
     };
 
