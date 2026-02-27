@@ -40,7 +40,7 @@ jobs:
         run: cd app && npm ci
 
       - name: Expo Prebuild
-        run: cd app && npx expo prebuild --platform ios --clean --non-interactive
+        run: cd app && npx expo prebuild --platform ios --non-interactive
 
       - name: Setup Xcode
         run: sudo xcode-select -s /Applications/Xcode_15.4.app
