@@ -38,6 +38,9 @@ class ApiService {
     const timeoutId = setTimeout(() => controller.abort(), 15000);
 
     try {
+      console.log('API请求:', options.method || 'GET', options.url);
+      console.log('Token:', this.token ? '已设置' : '未设置');
+      
       const response = await fetch(`${API_BASE}${options.url}`, {
         method: options.method || 'GET',
         headers,
@@ -66,7 +69,9 @@ class ApiService {
       if (error.name === 'AbortError') {
         throw new Error('请求超时，请检查网络');
       }
-      throw new Error(error.message || '网络错误，请稍后重试');
+      // Show more details about the error
+      const errorMsg = error.message || '网络错误';
+      throw new Error(`网络错误: ${errorMsg}`);
     }
   }
 
