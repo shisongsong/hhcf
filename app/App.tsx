@@ -13,7 +13,7 @@ import LoginScreen from './src/screens/LoginScreen';
 import PrivacyScreen from './src/screens/PrivacyScreen';
 import CameraScreen from './src/screens/CameraScreen';
 import 'vibedebug-sdk';
-import { QRScanner } from 'vibedebug-sdk';
+import { QRScanner } from './src/vibedebug-sdk';
 
 const Stack = createNativeStackNavigator();
 const Tab = createBottomTabNavigator();
