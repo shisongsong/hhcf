@@ -1,5 +1,6 @@
 import React from 'react';
 import { StatusBar, View, Text, StyleSheet, TouchableOpacity, ActivityIndicator } from 'react-native';
+import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { NavigationContainer, DefaultTheme } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
@@ -11,12 +12,11 @@ import DetailScreen from './src/screens/DetailScreen';
 import LoginScreen from './src/screens/LoginScreen';
 import PrivacyScreen from './src/screens/PrivacyScreen';
 import CameraScreen from './src/screens/CameraScreen';
-import { initLogInterceptor, useVibeDebugStore } from './src/utils/vibeDebug';
+import 'vibedebug-sdk';
+import { QRScanner } from 'vibedebug-sdk';
 
 const Stack = createNativeStackNavigator();
 const Tab = createBottomTabNavigator();
-
-initLogInterceptor(useVibeDebugStore.getState().addLog);
 
 const TabBar: React.FC<{ theme: any; navigation: any }> = ({ theme, navigation }) => {
   const state = navigation.getState();
@@ -109,12 +109,15 @@ const AppNavigator: React.FC = () => {
 
 const App: React.FC = () => {
   return (
-    <SafeAreaProvider>
-      <AppProvider>
-        <StatusBar barStyle="dark-content" />
-        <AppNavigator />
-      </AppProvider>
-    </SafeAreaProvider>
+    <GestureHandlerRootView style={{ flex: 1 }}>
+      <SafeAreaProvider>
+        <AppProvider>
+          <StatusBar barStyle="dark-content" />
+          <QRScanner />
+          <AppNavigator />
+        </AppProvider>
+      </SafeAreaProvider>
+    </GestureHandlerRootView>
   );
 };
 
