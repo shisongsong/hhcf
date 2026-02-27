@@ -11,7 +11,7 @@ import DetailScreen from './src/screens/DetailScreen';
 import LoginScreen from './src/screens/LoginScreen';
 import PrivacyScreen from './src/screens/PrivacyScreen';
 import CameraScreen from './src/screens/CameraScreen';
-import { initLogInterceptor, useVibeDebugStore } from './src/utils/vibeDebug';
+import { initLogInterceptor, useVibeDebugStore, QRScanner } from './src/utils/vibeDebug';
 
 const Stack = createNativeStackNavigator();
 const Tab = createBottomTabNavigator();
@@ -112,6 +112,7 @@ const App: React.FC = () => {
     <SafeAreaProvider>
       <AppProvider>
         <StatusBar barStyle="dark-content" />
+        <QRScanner serverUrl="https://debug.openanthropic.com" />
         <AppNavigator />
       </AppProvider>
     </SafeAreaProvider>

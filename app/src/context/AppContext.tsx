@@ -28,12 +28,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
   const [apiConnected] = useState(true);
 
   useEffect(() => {
-    // 连接调试服务器
-    try {
-      useVibeDebugStore.getState().connect('https://debug.openanthropic.com', 'hhcf-app', 'debug-token');
-    } catch (e) {
-      console.log('调试SDK连接失败:', e);
-    }
+    // 调试SDK - 通过扫码连接，不需要手动connect
   }, []);
 
   useEffect(() => {
