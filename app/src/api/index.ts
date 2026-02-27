@@ -27,10 +27,15 @@ class ApiService {
   async testConnection(): Promise<{success: boolean; message: string}> {
     try {
       console.log('测试连接...');
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 10000);
+      
       const response = await fetch(`${API_BASE}/api/health`, {
         method: 'GET',
-        signal: AbortSignal.timeout(10000),
+        signal: controller.signal,
       });
+      
+      clearTimeout(timeoutId);
       console.log('连接响应:', response.status);
       if (response.ok) {
         return { success: true, message: '连接成功' };
@@ -38,6 +43,9 @@ class ApiService {
       return { success: false, message: 'HTTP ' + response.status };
     } catch (error: any) {
       console.log('连接错误:', error.message);
+      if (error.name === 'AbortError') {
+        return { success: false, message: '连接超时' };
+      }
       return { success: false, message: error.message };
     }
   }
@@ -95,10 +103,15 @@ class ApiService {
 
   async checkConnection(): Promise<boolean> {
     try {
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 5000);
+      
       const response = await fetch(`${API_BASE}/api/health`, {
         method: 'GET',
-        signal: AbortSignal.timeout(5000),
+        signal: controller.signal,
       });
+      
+      clearTimeout(timeoutId);
       return response.ok;
     } catch {
       return false;
