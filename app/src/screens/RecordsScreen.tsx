@@ -8,6 +8,7 @@ import {
   Image,
   RefreshControl,
   Dimensions,
+  Alert,
 } from 'react-native';
 import { useApp } from '../context/AppContext';
 import { getMealTypeInfo, Theme, TIME_THEMES } from '../utils/theme';
@@ -59,8 +60,9 @@ export const RecordsScreen: React.FC<{ navigation: any }> = ({ navigation }) => 
       
       console.log('记录数量:', allRecords.length);
       setRecords(allRecords);
-    } catch (error) {
+    } catch (error: any) {
       console.error('Load records error:', error);
+      Alert.alert('加载失败', error.message || '请检查网络');
     }
   };
 

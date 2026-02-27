@@ -9,6 +9,7 @@ import {
   Dimensions,
   RefreshControl,
   Modal,
+  Alert,
 } from 'react-native';
 import { useApp } from '../context/AppContext';
 import { Theme, TIME_THEMES, getMealTypeInfo, recognizeMealType, getAllMealTypes } from '../utils/theme';
@@ -97,8 +98,9 @@ export const HomeScreen: React.FC<{ navigation: any }> = ({ navigation }) => {
       
       console.log('今日餐别:', meals);
       setTodayMeals(meals);
-    } catch (error) {
+    } catch (error: any) {
       console.error('Load meals error:', error);
+      Alert.alert('加载失败', error.message || '请检查网络');
     }
   };
 
