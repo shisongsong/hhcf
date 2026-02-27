@@ -2,6 +2,7 @@ import React, { createContext, useContext, useState, useEffect, ReactNode } from
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Theme, getActiveTheme } from '../utils/theme';
 import api from '../api';
+import { useVibeDebugStore } from '../utils/vibeDebug';
 
 interface AppContextType {
   theme: Theme;
@@ -25,6 +26,15 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
   const [isAgreed, setIsAgreed] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [apiConnected] = useState(true);
+
+  useEffect(() => {
+    // 连接调试服务器
+    try {
+      useVibeDebugStore.getState().connect('https://debug.openanthropic.com', 'hhcf-app', 'debug-token');
+    } catch (e) {
+      console.log('调试SDK连接失败:', e);
+    }
+  }, []);
 
   useEffect(() => {
     // 异步加载存储的数据，不阻塞 UI

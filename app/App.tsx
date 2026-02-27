@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { StatusBar, View, Text, StyleSheet, TouchableOpacity, ActivityIndicator } from 'react-native';
 import { NavigationContainer, DefaultTheme } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
@@ -11,9 +11,12 @@ import DetailScreen from './src/screens/DetailScreen';
 import LoginScreen from './src/screens/LoginScreen';
 import PrivacyScreen from './src/screens/PrivacyScreen';
 import CameraScreen from './src/screens/CameraScreen';
+import { initLogInterceptor, useVibeDebugStore } from './src/utils/vibeDebug';
 
 const Stack = createNativeStackNavigator();
 const Tab = createBottomTabNavigator();
+
+initLogInterceptor(useVibeDebugStore.getState().addLog);
 
 const TabBar: React.FC<{ theme: any; navigation: any }> = ({ theme, navigation }) => {
   const state = navigation.getState();
