@@ -1,5 +1,6 @@
 import React, { useEffect } from 'react';
 import { StatusBar, View, Text, StyleSheet, TouchableOpacity, ActivityIndicator } from 'react-native';
+import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { NavigationContainer, DefaultTheme } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
@@ -11,7 +12,7 @@ import DetailScreen from './src/screens/DetailScreen';
 import LoginScreen from './src/screens/LoginScreen';
 import PrivacyScreen from './src/screens/PrivacyScreen';
 import CameraScreen from './src/screens/CameraScreen';
-import { initLogInterceptor, useVibeDebugStore, QRScanner } from './src/utils/vibeDebug';
+import { initLogInterceptor, useVibeDebugStore, VibeDebugFloatingBall } from './src/utils/vibeDebug';
 
 const Stack = createNativeStackNavigator();
 const Tab = createBottomTabNavigator();
@@ -109,13 +110,15 @@ const AppNavigator: React.FC = () => {
 
 const App: React.FC = () => {
   return (
-    <SafeAreaProvider>
-      <AppProvider>
-        <StatusBar barStyle="dark-content" />
-        <QRScanner serverUrl="https://debug.openanthropic.com" />
-        <AppNavigator />
-      </AppProvider>
-    </SafeAreaProvider>
+    <GestureHandlerRootView style={{ flex: 1 }}>
+      <SafeAreaProvider>
+        <AppProvider>
+          <StatusBar barStyle="dark-content" />
+          <VibeDebugFloatingBall />
+          <AppNavigator />
+        </AppProvider>
+      </SafeAreaProvider>
+    </GestureHandlerRootView>
   );
 };
 

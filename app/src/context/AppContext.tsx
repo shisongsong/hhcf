@@ -2,7 +2,6 @@ import React, { createContext, useContext, useState, useEffect, ReactNode } from
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Theme, getActiveTheme } from '../utils/theme';
 import api from '../api';
-import { useVibeDebugStore } from '../utils/vibeDebug';
 
 interface AppContextType {
   theme: Theme;
