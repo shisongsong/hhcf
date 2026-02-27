@@ -64,6 +64,16 @@ export const LoginScreen: React.FC<{ navigation: any }> = ({ navigation }) => {
     setLoading(true);
     try {
       console.log('开始登录, phone =', phone);
+      
+      // 先测试连接
+      const connTest = await api.testConnection();
+      console.log('连接测试结果:', connTest);
+      if (!connTest.success) {
+        Alert.alert('网络错误', `无法连接到服务器: ${connTest.message}\n请检查网络后重试。`);
+        setLoading(false);
+        return;
+      }
+      
       const result = await api.phoneLogin(phone, code);
       console.log('登录成功, token =', result.token.substring(0, 20) + '...');
       

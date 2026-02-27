@@ -24,6 +24,24 @@ class ApiService {
     return this.token;
   }
 
+  async testConnection(): Promise<{success: boolean; message: string}> {
+    try {
+      console.log('测试连接...');
+      const response = await fetch(`${API_BASE}/api/health`, {
+        method: 'GET',
+        signal: AbortSignal.timeout(10000),
+      });
+      console.log('连接响应:', response.status);
+      if (response.ok) {
+        return { success: true, message: '连接成功' };
+      }
+      return { success: false, message: 'HTTP ' + response.status };
+    } catch (error: any) {
+      console.log('连接错误:', error.message);
+      return { success: false, message: error.message };
+    }
+  }
+
   async request<T = any>(options: RequestOptions): Promise<T> {
     const headers: Record<string, string> = {
       'Content-Type': 'application/json',
