@@ -42,16 +42,6 @@ jobs:
       - name: Expo Prebuild
         run: cd app && npx expo prebuild --platform android --non-interactive
 
-      - name: Fix Android SDK versions
-        run: |
-          cd app/android
-          sed -i "s/compileSdkVersion = Integer.parseInt(findProperty('android.compileSdkVersion') ?: '34')/compileSdkVersion = Integer.parseInt(findProperty('android.compileSdkVersion') ?: '35')/" build.gradle
-          sed -i "s/targetSdkVersion = Integer.parseInt(findProperty('android.targetSdkVersion') ?: '34')/targetSdkVersion = Integer.parseInt(findProperty('android.targetSdkVersion') ?: '35')/" build.gradle
-          sed -i "s/classpath('com.android.tools.build:gradle')/classpath('com.android.tools.build:gradle:8.6.0')/" build.gradle
-
-      - name: Sync package-lock
-        run: cd app && npm install
-
       - name: Create JS Bundle
         run: |
           cd app
