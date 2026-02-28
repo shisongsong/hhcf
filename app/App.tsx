@@ -12,8 +12,6 @@ import DetailScreen from './src/screens/DetailScreen';
 import LoginScreen from './src/screens/LoginScreen';
 import PrivacyScreen from './src/screens/PrivacyScreen';
 import CameraScreen from './src/screens/CameraScreen';
-import './src/vibedebug-sdk';
-import { QRScanner } from './src/vibedebug-sdk';
 
 const Stack = createNativeStackNavigator();
 const Tab = createBottomTabNavigator();
@@ -113,7 +111,6 @@ const App: React.FC = () => {
       <SafeAreaProvider>
         <AppProvider>
           <StatusBar barStyle="dark-content" />
-          <QRScanner />
           <AppNavigator />
         </AppProvider>
       </SafeAreaProvider>

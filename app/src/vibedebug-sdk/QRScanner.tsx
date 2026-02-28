@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, Modal, TouchableOpacity, Alert } from 'react-native';
 import { CameraView, useCameraPermissions } from 'expo-camera';
-import { useVibeDebugStore, initLogInterceptor } from './index';
+import { useVibeDebugStore } from './index';
 
 interface QRScannerProps {
   serverUrl: string;
@@ -11,30 +11,7 @@ interface QRScannerProps {
 export function QRScanner({ serverUrl, onConnected }: QRScannerProps) {
   const [modalVisible, setModalVisible] = useState(false);
   const [permission, requestPermission] = useCameraPermissions();
-  const { connect, addLog, isConnected } = useVibeDebugStore();
-
-  useEffect(() => {
-    initLogInterceptor(addLog);
-  }, []);
-
-  const handleBarCodeScanned = ({ data }: { data: string }) => {
-    try {
-      const url = new URL(data);
-      const sessionId = url.searchParams.get('session');
-      const token = url.searchParams.get('token');
-
-      if (!sessionId || !token) {
-        Alert.alert('Invalid QR Code', 'This QR code is not a valid VibeDebug session');
-        return;
-      }
-
-      connect(sessionId, token);
-      setModalVisible(false);
-      onConnected?.();
-    } catch (e) {
-      Alert.alert('Invalid QR Code', 'Could not parse QR code');
-    }
-  };
+  const { connect, isConnected } = useVibeDebugStore();
 
   const openScanner = async () => {
     if (!permission?.granted) {
