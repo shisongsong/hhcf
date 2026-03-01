@@ -8,7 +8,11 @@ import {
   TouchableOpacity,
   Dimensions,
   Alert,
+  Modal,
+  Share,
 } from 'react-native';
+import * as Sharing from 'expo-sharing';
+import * as MediaLibrary from 'expo-media-library';
 import { useApp } from '../context/AppContext';
 import { getMealTypeInfo } from '../utils/theme';
 import api from '../api';
@@ -24,11 +28,21 @@ interface MealRecord {
   shareId: string;
 }
 
+const POSTER_STYLES = [
+  { key: 'spark', name: '烟火拼贴', desc: '主图+多格拼贴' },
+  { key: 'film', name: '胶片日记', desc: '胶片感时间轴' },
+  { key: 'mag', name: '杂志封面', desc: '视觉冲击感' },
+];
+
 export const DetailScreen: React.FC<{ navigation: any; route: any }> = ({ navigation, route }) => {
   const { theme } = useApp();
   const [record, setRecord] = useState<MealRecord | null>(null);
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
   const [loading, setLoading] = useState(true);
+  const [showPosterSheet, setShowPosterSheet] = useState(false);
+  const [currentPosterStyle, setCurrentPosterStyle] = useState(POSTER_STYLES[0].key);
+  const [showPosterPreview, setShowPosterPreview] = useState(false);
+  const [isSharing, setIsSharing] = useState(false);
 
   const recordId = route.params?.recordId;
   const passedRecord = route.params?.record;
@@ -72,8 +86,89 @@ export const DetailScreen: React.FC<{ navigation: any; route: any }> = ({ naviga
     ]);
   };
 
-  const handleShare = () => {
-    Alert.alert('分享', '分享功能开发中');
+  const handleShare = async () => {
+    if (!record || !record.imageUrl || record.imageUrl.length === 0) {
+      Alert.alert('分享失败', '暂无可用图片');
+      return;
+    }
+
+    try {
+      setIsSharing(true);
+      const imageUri = record.imageUrl[0];
+      
+      const isAvailable = await Sharing.isAvailableAsync();
+      
+      if (isAvailable) {
+        await Sharing.shareAsync(imageUri, {
+          mimeType: 'image/jpeg',
+          dialogTitle: '分享美食记录',
+        });
+      } else {
+        await Share.share({
+          message: `${record.title} - 好好吃饭`,
+          url: imageUri,
+        });
+      }
+    } catch (error: any) {
+      console.error('Share error:', error);
+      Alert.alert('分享失败', error.message || '请重试');
+    } finally {
+      setIsSharing(false);
+    }
+  };
+
+  const handleOpenPosterSheet = () => {
+    if (!record || !record.imageUrl || record.imageUrl.length === 0) {
+      Alert.alert('暂无可用图片');
+      return;
+    }
+    setShowPosterSheet(true);
+  };
+
+  const handleGeneratePoster = async () => {
+    if (!record || !record.imageUrl || record.imageUrl.length === 0) {
+      Alert.alert('暂无可用图片');
+      return;
+    }
+
+    try {
+      setShowPosterSheet(false);
+      setShowPosterPreview(true);
+    } catch (error: any) {
+      console.error('Generate poster error:', error);
+      Alert.alert('生成失败', error.message || '请重试');
+    }
+  };
+
+  const handleSavePoster = async () => {
+    if (!record || !record.imageUrl || record.imageUrl.length === 0) {
+      Alert.alert('保存失败', '暂无可用图片');
+      return;
+    }
+
+    try {
+      const { status } = await MediaLibrary.requestPermissionsAsync();
+      if (status !== 'granted') {
+        Alert.alert('需要相册权限', '请允许访问相册');
+        return;
+      }
+
+      const imageUri = record.imageUrl[0];
+      const asset = await MediaLibrary.createAssetAsync(imageUri);
+      
+      const album = await MediaLibrary.getAlbumAsync('好好吃饭');
+      if (album) {
+        await MediaLibrary.addAssetsToAlbum([asset], album, false);
+      } else {
+        await MediaLibrary.createAlbumAsync('好好吃饭', asset, false);
+      }
+
+      Alert.alert('保存成功', '已保存到相册');
+      setShowPosterPreview(false);
+    } catch (error: any) {
+      console.error('Save poster error:', error);
+      Alert.alert('保存失败', error.message || '请重试');
+    }
   };
 
   if (loading || !record) {
@@ -138,11 +233,20 @@ export const DetailScreen: React.FC<{ navigation: any; route: any }> = ({ naviga
         </View>
 
         <View style={styles.actionCard}>
-          <TouchableOpacity style={[styles.actionBtn, { backgroundColor: theme.primary }]}>
-            <Text style={styles.actionBtnText}>生成海报</Text>
+          <TouchableOpacity 
+            style={[styles.actionBtn, { backgroundColor: theme.primary }]}
+            onPress={handleOpenPosterSheet}
+          >
+            <Text style={[styles.actionBtnText, { color: '#fff' }]}>生成海报</Text>
           </TouchableOpacity>
-          <TouchableOpacity style={styles.actionBtn} onPress={handleShare}>
-            <Text style={styles.actionBtnText}>分享好友</Text>
+          <TouchableOpacity 
+            style={styles.actionBtn} 
+            onPress={handleShare}
+            disabled={isSharing}
+          >
+            <Text style={styles.actionBtnText}>
+              {isSharing ? '分享中...' : '分享好友'}
+            </Text>
           </TouchableOpacity>
           <TouchableOpacity style={styles.actionBtn} onPress={handleDelete}>
             <Text style={[styles.actionBtnText, { color: '#FF3B30' }]}>删除记录</Text>
@@ -153,6 +257,85 @@ export const DetailScreen: React.FC<{ navigation: any; route: any }> = ({ naviga
       <TouchableOpacity style={styles.backBtn} onPress={() => navigation.goBack()}>
         <Text style={styles.backBtnText}>← 返回</Text>
       </TouchableOpacity>
+
+      <Modal visible={showPosterSheet} transparent animationType="slide">
+        <View style={styles.sheetMask}>
+          <View style={styles.posterSheet}>
+            <Text style={styles.sheetTitle}>选择海报模板</Text>
+            <Text style={styles.sheetSubtitle}>支持多图展示，先预览再保存</Text>
+            
+            <View style={styles.styleList}>
+              {POSTER_STYLES.map((item) => (
+                <TouchableOpacity
+                  key={item.key}
+                  style={[
+                    styles.styleItem,
+                    currentPosterStyle === item.key && { borderColor: theme.accent },
+                  ]}
+                  onPress={() => setCurrentPosterStyle(item.key)}
+                >
+                  <Text style={styles.styleName}>{item.name}</Text>
+                  <Text style={styles.styleDesc}>{item.desc}</Text>
+                </TouchableOpacity>
+              ))}
+            </View>
+
+            <View style={styles.sheetActions}>
+              <TouchableOpacity 
+                style={[styles.sheetBtn, styles.cancelBtn]}
+                onPress={() => setShowPosterSheet(false)}
+              >
+                <Text style={styles.cancelBtnText}>取消</Text>
+              </TouchableOpacity>
+              <TouchableOpacity 
+                style={[styles.sheetBtn, styles.confirmBtn, { backgroundColor: theme.primary }]}
+                onPress={handleGeneratePoster}
+              >
+                <Text style={[styles.confirmBtnText, { color: '#fff' }]}>预览海报</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
+
+      <Modal visible={showPosterPreview} transparent animationType="slide">
+        <View style={styles.sheetMask}>
+          <View style={styles.posterPreview}>
+            <Text style={styles.previewTitle}>海报预览</Text>
+            <Text style={styles.previewHint}>确认后再保存到相册</Text>
+
+            <View style={styles.previewImageWrap}>
+              {record.imageUrl?.[0] && (
+                <Image
+                  source={{ uri: record.imageUrl[0] }}
+                  style={styles.previewImage}
+                  resizeMode="contain"
+                />
+              )}
+              <View style={styles.previewOverlay}>
+                <Text style={styles.previewMealType}>{mealTypeInfo.emoji} {mealTypeInfo.label}</Text>
+                <Text style={styles.previewTitle2}>{record.title}</Text>
+                <Text style={styles.previewDate}>{formattedDate}</Text>
+              </View>
+            </View>
+
+            <View style={styles.previewActions}>
+              <TouchableOpacity 
+                style={[styles.sheetBtn, styles.cancelBtn]}
+                onPress={() => setShowPosterPreview(false)}
+              >
+                <Text style={styles.cancelBtnText}>换个模板</Text>
+              </TouchableOpacity>
+              <TouchableOpacity 
+                style={[styles.sheetBtn, styles.confirmBtn, { backgroundColor: theme.primary }]}
+                onPress={handleSavePoster}
+              >
+                <Text style={[styles.confirmBtnText, { color: '#fff' }]}>保存到相册</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
     </View>
   );
 };
@@ -262,6 +445,133 @@ const styles = StyleSheet.create({
   backBtnText: {
     fontSize: 16,
     color: '#333',
+  },
+  sheetMask: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.5)',
+    justifyContent: 'flex-end',
+  },
+  posterSheet: {
+    backgroundColor: '#fff',
+    borderTopLeftRadius: 20,
+    borderTopRightRadius: 20,
+    padding: 20,
+    paddingBottom: 40,
+  },
+  sheetTitle: {
+    fontSize: 18,
+    fontWeight: '600',
+    textAlign: 'center',
+    marginBottom: 8,
+  },
+  sheetSubtitle: {
+    fontSize: 14,
+    color: '#999',
+    textAlign: 'center',
+    marginBottom: 20,
+  },
+  styleList: {
+    gap: 12,
+  },
+  styleItem: {
+    backgroundColor: '#f5f5f5',
+    borderRadius: 12,
+    padding: 16,
+    borderWidth: 2,
+    borderColor: 'transparent',
+  },
+  styleName: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#333',
+    marginBottom: 4,
+  },
+  styleDesc: {
+    fontSize: 13,
+    color: '#999',
+  },
+  sheetActions: {
+    flexDirection: 'row',
+    gap: 12,
+    marginTop: 20,
+  },
+  sheetBtn: {
+    flex: 1,
+    paddingVertical: 14,
+    alignItems: 'center',
+    borderRadius: 12,
+  },
+  cancelBtn: {
+    backgroundColor: '#f5f5f5',
+  },
+  cancelBtnText: {
+    fontSize: 16,
+    color: '#666',
+  },
+  confirmBtn: {},
+  confirmBtnText: {
+    fontSize: 16,
+    fontWeight: '600',
+  },
+  posterPreview: {
+    backgroundColor: '#fff',
+    borderTopLeftRadius: 20,
+    borderTopRightRadius: 20,
+    padding: 20,
+    paddingBottom: 40,
+    maxHeight: '80%',
+  },
+  previewTitle: {
+    fontSize: 18,
+    fontWeight: '600',
+    textAlign: 'center',
+  },
+  previewHint: {
+    fontSize: 14,
+    color: '#999',
+    textAlign: 'center',
+    marginTop: 4,
+    marginBottom: 16,
+  },
+  previewImageWrap: {
+    width: '100%',
+    aspectRatio: 0.65,
+    backgroundColor: '#f0f0f0',
+    borderRadius: 12,
+    overflow: 'hidden',
+    position: 'relative',
+  },
+  previewImage: {
+    width: '100%',
+    height: '100%',
+  },
+  previewOverlay: {
+    position: 'absolute',
+    bottom: 0,
+    left: 0,
+    right: 0,
+    backgroundColor: 'rgba(0,0,0,0.4)',
+    padding: 16,
+  },
+  previewMealType: {
+    fontSize: 14,
+    color: '#fff',
+    marginBottom: 4,
+  },
+  previewTitle2: {
+    fontSize: 18,
+    fontWeight: '600',
+    color: '#fff',
+    marginBottom: 4,
+  },
+  previewDate: {
+    fontSize: 12,
+    color: 'rgba(255,255,255,0.8)',
+  },
+  previewActions: {
+    flexDirection: 'row',
+    gap: 12,
+    marginTop: 20,
   },
 });
 
