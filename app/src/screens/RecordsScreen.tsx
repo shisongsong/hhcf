@@ -427,7 +427,7 @@ export const RecordsScreen: React.FC<{ navigation: any }> = ({ navigation }) => 
                   {day.dateNum}
                 </Text>
                 <View style={styles.mealGridTiny}>
-                  {day.meals.slice(0, 2).map((meal) => (
+                  {day.meals.map((meal) => (
                     <TouchableOpacity
                       key={meal.key}
                       style={[
@@ -800,20 +800,20 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     flexWrap: 'wrap',
     justifyContent: 'center',
-    gap: 1,
+    gap: 0,
   },
   mealIconItemTiny: {
-    padding: 1,
+    padding: 0,
   },
   mealIconBgTiny: {
-    width: 18,
-    height: 18,
-    borderRadius: 4,
+    width: 14,
+    height: 14,
+    borderRadius: 3,
     alignItems: 'center',
     justifyContent: 'center',
   },
   mealIconEmojiTiny: {
-    fontSize: 10,
+    fontSize: 8,
   },
 });
 
