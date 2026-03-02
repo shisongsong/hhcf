@@ -346,7 +346,7 @@ export const RecordsScreen: React.FC<{ navigation: any }> = ({ navigation }) => 
           <Text style={[styles.periodBtnText, weekOffset >= 0 && styles.periodBtnTextDisabled]}>下周</Text>
         </TouchableOpacity>
       </View>
-      <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.weekDayList}>
+      <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.weekDayList}>
         {weekViewData.days.map((day) => (
           <View key={day.key} style={[styles.weekDayCard, day.isToday && styles.weekDayCardToday]}>
             <View style={styles.weekDayHeader}>
@@ -679,23 +679,27 @@ const styles = StyleSheet.create({
     marginTop: 4,
   },
   weekDayList: {
-    paddingHorizontal: 12,
-    gap: 8,
+    paddingHorizontal: 16,
+    paddingBottom: 100,
+    gap: 10,
   },
   weekDayCard: {
-    width: (SCREEN_WIDTH - 64) / 4,
     backgroundColor: '#fff',
     borderRadius: 12,
-    padding: 10,
-    marginHorizontal: 4,
+    padding: 12,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
   },
   weekDayCardToday: {
     borderWidth: 2,
     borderColor: '#FF8C42',
   },
   weekDayHeader: {
+    flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: 8,
+    gap: 8,
+    minWidth: 70,
   },
   weekDayLabel: {
     fontSize: 12,
@@ -714,13 +718,16 @@ const styles = StyleSheet.create({
     color: '#FF8C42',
   },
   mealGridSmall: {
-    gap: 4,
+    flexDirection: 'row',
+    gap: 8,
+    flex: 1,
+    justifyContent: 'flex-end',
   },
   mealIconItem: {
     alignItems: 'center',
-    paddingVertical: 4,
-    borderRadius: 6,
-    marginBottom: 2,
+    padding: 4,
+    borderRadius: 8,
+    minWidth: 50,
   },
   mealIconChecked: {
     backgroundColor: 'rgba(255,255,255,0.9)',
@@ -729,14 +736,14 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(255,255,255,0.5)',
   },
   mealIconBg: {
-    width: 28,
-    height: 28,
-    borderRadius: 6,
+    width: 36,
+    height: 36,
+    borderRadius: 8,
     alignItems: 'center',
     justifyContent: 'center',
   },
   mealIconEmoji: {
-    fontSize: 14,
+    fontSize: 18,
   },
   mealIconLabel: {
     fontSize: 10,
@@ -771,8 +778,8 @@ const styles = StyleSheet.create({
   },
   monthCell: {
     width: `${100 / 7}%`,
-    aspectRatio: 0.8,
-    padding: 4,
+    minHeight: 70,
+    padding: 2,
   },
   monthCellPlaceholder: {
     opacity: 0,
@@ -793,14 +800,14 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     flexWrap: 'wrap',
     justifyContent: 'center',
-    gap: 2,
+    gap: 1,
   },
   mealIconItemTiny: {
-    padding: 2,
+    padding: 1,
   },
   mealIconBgTiny: {
-    width: 20,
-    height: 20,
+    width: 18,
+    height: 18,
     borderRadius: 4,
     alignItems: 'center',
     justifyContent: 'center',
