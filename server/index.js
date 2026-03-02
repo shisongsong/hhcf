@@ -67,7 +67,7 @@ const qiniuConfig = {
 
 const mac = new qiniu.auth.digest.Mac(qiniuConfig.accessKey, qiniuConfig.secretKey);
 const config = new qiniu.conf.Config();
-config.zone = qiniu.zone.Zone_z2;
+config.zone = qiniu.zone.Zone_as0;
 
 const upload = multer({ dest: 'uploads/' });
 
