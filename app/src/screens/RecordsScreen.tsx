@@ -432,19 +432,17 @@ export const RecordsScreen: React.FC<{ navigation: any }> = ({ navigation }) => 
                       key={meal.key}
                       style={[
                         styles.mealIconItemTiny,
-                        meal.checked && styles.mealIconChecked,
+                        meal.checked ? styles.mealIconChecked : styles.mealIconUnchecked,
                       ]}
                       onPress={() => handleDayMealTap(meal.recordId)}
                     >
                       <View
                         style={[
                           styles.mealIconBgTiny,
-                          { backgroundColor: meal.checked ? meal.color : 'rgba(255,255,255,0.4)' },
+                          { backgroundColor: meal.checked ? meal.color : 'rgba(255,255,255,0.55)' },
                         ]}
                       >
-                        <Text style={[styles.mealIconEmojiTiny, !meal.checked && styles.mealIconLabelUnchecked]}>
-                          {meal.emoji}
-                        </Text>
+                        <Text style={styles.mealIconEmojiTiny}>{meal.emoji}</Text>
                       </View>
                     </TouchableOpacity>
                   ))}
@@ -810,7 +808,10 @@ const styles = StyleSheet.create({
     paddingVertical: 1,
   },
   mealIconChecked: {
-    opacity: 1,
+    backgroundColor: 'rgba(255,255,255,0.9)',
+  },
+  mealIconUnchecked: {
+    backgroundColor: 'rgba(255,255,255,0.5)',
   },
   mealIconBgTiny: {
     width: 16,
@@ -821,9 +822,6 @@ const styles = StyleSheet.create({
   },
   mealIconEmojiTiny: {
     fontSize: 8,
-  },
-  mealIconLabelUnchecked: {
-    opacity: 0.4,
   },
 });
 

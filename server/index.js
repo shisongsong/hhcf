@@ -411,13 +411,15 @@ app.post('/api/upload', upload.array('files', 9), async (req, res) => {
 
         formUploader.putFile(uploadToken, key, file.path, putExtra, (err, body, info) => {
           if (err) {
+            console.error('Qiniu上传错误:', JSON.stringify(err));
             reject(err);
             return;
           }
           if (info.statusCode === 200) {
             resolve(`${qiniuConfig.domain}/${key}`);
           } else {
-            reject(new Error(body));
+            console.error('Qiniu上传失败:', info.statusCode, body);
+            reject(new Error(body?.error || `上传失败: ${info.statusCode}`));
           }
         });
       });
