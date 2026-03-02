@@ -1,4 +1,4 @@
-const API_BASE = 'https://hhcf-api.openanthropic.com';
+const API_BASE = __DEV__ ? 'http://localhost:3000' : 'https://hhcf-api.openanthropic.com';
 
 interface RequestOptions {
   url: string;
