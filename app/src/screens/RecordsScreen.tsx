@@ -430,10 +430,7 @@ export const RecordsScreen: React.FC<{ navigation: any }> = ({ navigation }) => 
                   {day.meals.map((meal) => (
                     <TouchableOpacity
                       key={meal.key}
-                      style={[
-                        styles.mealIconItemTiny,
-                        meal.checked ? styles.mealIconChecked : styles.mealIconUnchecked,
-                      ]}
+                      style={styles.mealIconItemTiny}
                       onPress={() => handleDayMealTap(meal.recordId)}
                     >
                       <View
@@ -800,14 +797,16 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     flexWrap: 'wrap',
     justifyContent: 'center',
-    gap: 0,
+    width: '100%',
   },
   mealIconItemTiny: {
-    padding: 0,
+    width: '50%',
+    alignItems: 'center',
+    paddingVertical: 1,
   },
   mealIconBgTiny: {
-    width: 14,
-    height: 14,
+    width: 16,
+    height: 16,
     borderRadius: 3,
     alignItems: 'center',
     justifyContent: 'center',
